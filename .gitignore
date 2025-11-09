@@ -1,0 +1,8 @@
+tmp
+
+*.code-workspace
+
+*.wav
+voice-samples/*
+!voice-samples/.gitkeep
+
