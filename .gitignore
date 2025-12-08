@@ -1,8 +1,7 @@
 tmp
+*.wav
 
 *.code-workspace
-
-*.wav
-voice-samples/*
-!voice-samples/.gitkeep
-
+.venv
+unsloth_compiled_cache
+__pycache__
