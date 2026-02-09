@@ -1,4 +1,4 @@
-.PHONY: dev fmt lint type-check check test test-unit test-integration migrate docker-up docker-up-full docker-down docker-db logs
+.PHONY: dev fmt lint type-check check test test-unit test-integration migrate docker-up docker-down docker-db
 
 dev:
 	uv run uvicorn --factory doppelganger.app:create_app --reload --host 0.0.0.0 --port 8000
@@ -33,14 +33,8 @@ check: fmt lint type-check
 docker-up:
 	docker compose --profile app up -d
 
-docker-up-full:
-	docker compose --profile app --profile observability up -d
-
 docker-down:
-	docker compose --profile app --profile observability down
+	docker compose --profile app down
 
 docker-db:
 	docker compose up -d postgres
-
-logs:
-	docker compose logs -f
