@@ -1,13 +1,52 @@
-tmp
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
 
-*.code-workspace
+# Virtual environment
+.venv/
 
-.venv
-unsloth_compiled_cache
-__pycache__
+# Environment variables
+.env
 
-raw_audio/*
-train/*
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Model files
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+
+# Audio files
+*.wav
+*.mp3
+*.opus
+*.flac
+*.ogg
+
+# Keep .gitkeep files
 !.gitkeep
 
-checkpoints
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Docker overrides
+docker-compose.override.yml
+
+# Frontend build output
+frontend/dist/
+frontend/node_modules/
+
+# Temp directory
+tmp/

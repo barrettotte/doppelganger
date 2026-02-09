@@ -1,39 +1,53 @@
 [project]
 name = "doppelganger"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = "==3.10.*"
+description = "TTS voice cloning Discord bot"
+requires-python = ">=3.12"
 dependencies = [
-    "auditok>=0.3.0",
-    "coqui-tts",
-    "openai-whisper>=20250625",
-    "torch>=2.5.1",
-    "torchaudio>=2.5.1",
-    "torchvision>=0.20.1",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "pydantic-settings>=2.7.0",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "asyncpg>=0.30.0",
+    "alembic>=1.14.0",
+    "psycopg2-binary>=2.9.0",
+    "httpx>=0.28.0",
 ]
 
-[tool.uv]
-environments = [
-  "sys_platform == 'linux'",
-]
-required-environments = [
-  "sys_platform == 'linux' and platform_machine == 'x86_64'",
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.25.0",
+    "ruff>=0.9.0",
+    "basedpyright>=1.25.0",
 ]
 
-[[tool.uv.index]]
-name = "pytorch-cu121"
-url = "https://download.pytorch.org/whl/cu121"
-explicit = true
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.uv.sources]
-torch = [
-  { index = "pytorch-cu121" },
-]
-torchaudio = [
-  { index = "pytorch-cu121" },
-]
-torchvision = [
-  { index = "pytorch-cu121" },
-]
-coqui-tts = { git = "https://github.com/idiap/coqui-ai-TTS.git", tag = "v0.27.3" }
+[tool.hatch.build.targets.wheel]
+packages = ["src/doppelganger"]
+
+[tool.ruff]
+target-version = "py312"
+src = ["src", "tests"]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "UP", "B", "S", "T20", "SIM", "TCH"]
+ignore = ["SIM108"]  # block form if/else
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S104"]
+"src/doppelganger/config.py" = ["S104"]
+
+[tool.basedpyright]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
