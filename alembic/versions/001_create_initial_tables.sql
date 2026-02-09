@@ -18,8 +18,8 @@ CREATE TABLE characters (
 CREATE TABLE tts_requests (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users (id),
-    character_voice VARCHAR(100) NOT NULL,
-    text VARCHAR(255) NOT NULL,
+    character VARCHAR(100) NOT NULL,
+    text VARCHAR(3000) NOT NULL, -- 2000+ is where it start hallucinating
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     started_at TIMESTAMPTZ,

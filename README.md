@@ -1,8 +1,9 @@
 # Doppelganger
 
-TTS voice cloning Discord bot.
+TTS voice cloning Discord bot powered by [Chatterbox TTS](https://github.com/resemble-ai/chatterbox).
 
-Uses [Chatterbox TTS](https://github.com/resemble-ai/chatterbox). 
+Users trigger `/say <character> <text>` in Discord and the bot joins a voice channel, plays the generated speech, and leaves.
+Characters are registered from short reference audio clips - no fine-tuning needed.
 
 ## Quick Start
 
@@ -19,6 +20,10 @@ make docker-db
 # Run database migrations
 make migrate
 
+# Copy and configure environment
+cp .env.example .env
+# Edit .env with your Discord bot token and guild ID
+
 # Start dev server at http://localhost:8000
 make dev
 ```
@@ -28,41 +33,52 @@ make dev
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/)
 - Docker and Docker Compose
-- NVIDIA GPU + CUDA with 8-16GB VRAM for inference
+- NVIDIA GPU + CUDA with 8-16GB VRAM for TTS inference
+- FFmpeg (for Discord voice audio playback)
+
+## Discord Bot
+
+The Discord bot runs inside the FastAPI process. So starting the API will start the bot.
+Setup bot using instructions in [docs/bot-setup.md](docs/bot-setup.md).
+
+| Command | Description |
+|---|---|
+| `!dg say <character> <text> [channel]` | Generate TTS audio and play it in a voice channel. Defaults to your current channel if not specified. |
+| `!dg voices` | List all available character voices. |
+
+All command responses are ephemeral (only visible to the requesting user).
 
 ## Voice Cloning
 
-To register a character voice, provide a 5-30 second WAV reference clip of clean speech (16-48kHz, minimal background noise).
-Around 10 seconds mono 22050 Hz works best.
-
+To register a character voice, provide a 5-30 second WAV reference clip of clean speech (16-48kHz, minimal background noise). Around 10 seconds mono 22050 Hz works best.
 
 ```sh
-# create a new character
+# Upload reference audio via API
 curl -X POST "http://localhost:8000/api/characters?name=my-character" \
   -F "audio=@/path/to/reference.wav"
 
-# Manually place file at voices/my-character/reference.wav and restart the server
+# Or manually place the file and restart the server
+# voices/my-character/reference.wav
 
-# generate TTS
+# Generate TTS via API
 curl -X POST "http://localhost:8000/api/tts/generate" \
   -H "Content-Type: application/json" \
-  -d '{"character_voice": "my-character", "text": "Hello world"}' \
+  -d '{"character": "my-character", "text": "Hello world"}' \
   --output output.wav
 ```
 
-## Configuration
+## API Endpoints
 
-| Variable | Default | Description |
+Interactive docs are available at [http://localhost:8000/docs](http://localhost:8000/docs) when the server is running.
+
+| Method | Path | Description |
 |---|---|---|
-| `DOPPELGANGER_TTS__DEVICE` | `cuda` | Torch device (`cuda`, `cpu`) |
-| `DOPPELGANGER_TTS__VOICES_DIR` | `voices` | Directory for character reference audio |
-| `DOPPELGANGER_TTS__EXAGGERATION` | `0.5` | Vocal expressiveness (0.0-1.0) |
-| `DOPPELGANGER_TTS__CFG_WEIGHT` | `0.5` | Voice cloning fidelity |
-| `DOPPELGANGER_TTS__CACHE_MAX_SIZE` | `100` | Max entries in audio LRU cache |
-| `DOPPELGANGER_DATABASE__HOST` | `localhost` | PostgreSQL host |
-| `DOPPELGANGER_DATABASE__PORT` | `5432` | PostgreSQL port |
-
-See `.env.example` for the full list.
+| `GET` | `/health` | Service health check (DB connectivity, TTS model state, GPU status) |
+| `GET` | `/api/characters` | List all registered character voices |
+| `POST` | `/api/characters` | Create a new character from a reference audio upload |
+| `DELETE` | `/api/characters/{character_id}` | Delete a character and its reference audio |
+| `POST` | `/api/tts/generate` | Generate full speech audio as WAV (with caching) |
+| `POST` | `/api/tts/stream` | Stream speech audio in chunks |
 
 ## Development
 
@@ -87,4 +103,17 @@ make lint
 
 # Type-check
 make type-check
+```
+
+## Docker
+
+```sh
+# Start postgres only
+make docker-db
+
+# Start fullstack (API + PostgreSQL)
+make docker-up
+
+# Stop all containers
+make docker-down
 ```

@@ -50,6 +50,9 @@ class DiscordSettings(BaseModel):
     guild_id: str = ""
     required_role_id: str = ""
     cooldown_seconds: int = 5
+    command_prefix: str = "!"
+    entrance_sound: str = ""
+    max_text_length: int = 500
 
 
 class Settings(BaseSettings):
