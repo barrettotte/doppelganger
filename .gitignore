@@ -1,7 +1,13 @@
 tmp
-*.wav
 
 *.code-workspace
+
 .venv
 unsloth_compiled_cache
 __pycache__
+
+raw_audio/*
+train/*
+!.gitkeep
+
+checkpoints

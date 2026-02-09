@@ -1,0 +1,39 @@
+[project]
+name = "doppelganger"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.10.*"
+dependencies = [
+    "auditok>=0.3.0",
+    "coqui-tts",
+    "openai-whisper>=20250625",
+    "torch>=2.5.1",
+    "torchaudio>=2.5.1",
+    "torchvision>=0.20.1",
+]
+
+[tool.uv]
+environments = [
+  "sys_platform == 'linux'",
+]
+required-environments = [
+  "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu121" },
+]
+torchaudio = [
+  { index = "pytorch-cu121" },
+]
+torchvision = [
+  { index = "pytorch-cu121" },
+]
+coqui-tts = { git = "https://github.com/idiap/coqui-ai-TTS.git", tag = "v0.27.3" }
