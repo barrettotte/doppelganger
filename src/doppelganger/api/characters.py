@@ -1,0 +1,101 @@
+"""Character management API endpoints."""
+
+import logging
+import shutil
+from pathlib import Path
+
+from fastapi import APIRouter, HTTPException, Request, UploadFile
+from sqlalchemy import text
+from starlette.responses import Response
+
+from doppelganger.models.schemas import (
+    CharacterListResponse,
+    CharacterResponse,
+    CharacterVoiceResponse,
+)
+from doppelganger.tts.audio_validation import AudioValidationError, validate_reference_audio
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/api/characters", tags=["characters"])
+
+
+@router.get("", response_model=CharacterListResponse)
+async def list_characters(request: Request) -> CharacterListResponse:
+    """List all registered character voices."""
+    registry = request.app.state.voice_registry
+    voices = registry.list_voices()
+
+    return CharacterListResponse(
+        characters=[
+            CharacterVoiceResponse(name=v.name, reference_audio_path=str(v.reference_audio_path)) for v in voices
+        ],
+        count=len(voices),
+    )
+
+
+@router.post("", response_model=CharacterResponse, status_code=201)
+async def create_character(request: Request, name: str, audio: UploadFile) -> CharacterResponse:
+    """Create a new character with a reference audio file."""
+    name = name.lower().strip()
+    if not name or not all(c.isalnum() or c == "-" for c in name):
+        raise HTTPException(status_code=422, detail="Name must match pattern ^[a-z0-9-]+$")
+
+    registry = request.app.state.voice_registry
+    if registry.get_voice(name) is not None:
+        raise HTTPException(status_code=409, detail=f"Character '{name}' already exists")
+
+    file_data = await audio.read()
+    try:
+        validate_reference_audio(file_data)
+    except AudioValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    voices_dir = Path(request.app.state.voice_registry._voices_dir)
+    char_dir = voices_dir / name
+    char_dir.mkdir(parents=True, exist_ok=True)
+    ref_path = char_dir / "reference.wav"
+    ref_path.write_bytes(file_data)
+
+    engine = request.app.state.db_engine
+    async with engine.begin() as conn:
+        sql = text("INSERT INTO characters (name, reference_audio_path) VALUES (:name, :path) RETURNING *")
+        result = await conn.execute(sql, {"name": name, "path": str(ref_path)})
+        row = dict(result.mappings().one())
+
+    registry.refresh()
+    logger.info("Created character: %s", name)
+
+    return CharacterResponse(
+        id=row["id"],
+        name=row["name"],
+        reference_audio_path=row["reference_audio_path"],
+        created_at=row["created_at"],
+    )
+
+
+@router.delete("/{character_id}", status_code=204)
+async def delete_character(request: Request, character_id: int) -> Response:
+    """Delete a character by ID."""
+    engine = request.app.state.db_engine
+    registry = request.app.state.voice_registry
+
+    async with engine.begin() as conn:
+        sql = text("SELECT * FROM characters WHERE id = :id")
+        result = await conn.execute(sql, {"id": character_id})
+        row = result.mappings().first()
+
+        if row is None:
+            raise HTTPException(status_code=404, detail="Character not found")
+
+        ref_path = Path(row["reference_audio_path"])
+        char_dir = ref_path.parent
+
+        await conn.execute(text("DELETE FROM characters WHERE id = :id"), {"id": character_id})
+
+    if char_dir.exists():
+        shutil.rmtree(char_dir)
+
+    registry.refresh()
+    logger.info("Deleted character id=%d name=%s", character_id, row["name"])
+
+    return Response(status_code=204)

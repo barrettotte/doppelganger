@@ -12,6 +12,8 @@ class HealthResponse(BaseModel):
     database: str
     tts_model: str
     gpu_available: bool
+    voices_loaded: int = 0
+    cache_size: int = 0
 
 
 class ErrorDetail(BaseModel):
@@ -50,7 +52,7 @@ class CharacterResponse(BaseModel):
 class TTSRequestCreate(BaseModel):
     """Request model for creating a TTS request."""
 
-    character_voice: str
+    character: str
     text: str = Field(max_length=255)
 
 
@@ -59,7 +61,7 @@ class TTSRequestResponse(BaseModel):
 
     id: int
     user_id: int
-    character_voice: str
+    character: str
     text: str
     status: str
     created_at: datetime
@@ -76,3 +78,30 @@ class AuditLogResponse(BaseModel):
     action: str
     details: dict[str, str | int | bool | None] | None = None
     created_at: datetime
+
+
+class CharacterVoiceResponse(BaseModel):
+    """Response model for a voice registry entry."""
+
+    name: str
+    reference_audio_path: str
+
+
+class CharacterListResponse(BaseModel):
+    """Response model for listing all characters."""
+
+    characters: list[CharacterVoiceResponse]
+    count: int
+
+
+class TTSGenerateRequest(BaseModel):
+    """Request model for TTS generation."""
+
+    character: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
+    text: str = Field(min_length=1, max_length=500)
+
+
+class CharacterCreateRequest(BaseModel):
+    """Request model for creating a character (name field for multipart)."""
+
+    name: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")

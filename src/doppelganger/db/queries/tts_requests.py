@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 async def create_tts_request(conn: AsyncConnection, user_id: int, voice: str, request_text: str) -> dict[str, Any]:
     """Insert a new TTS request and return the created row."""
-    sql = text("INSERT INTO tts_requests (user_id, character_voice, text) VALUES (:user_id, :voice, :text) RETURNING *")
+    sql = text("INSERT INTO tts_requests (user_id, character, text) VALUES (:user_id, :voice, :text) RETURNING *")
     params = {"user_id": user_id, "voice": voice, "text": request_text}
 
     result = await conn.execute(sql, params)

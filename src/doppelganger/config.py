@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,8 +34,13 @@ class TTSSettings(BaseModel):
     """TTS engine settings."""
 
     model_name: str = "chatterbox"
-    device: str = "cuda"
-    voices_dir: str = "voices"
+    device: str = Field(default="cuda", description="Torch device for inference (cuda, cpu)")
+    voices_dir: str = Field(default="voices", description="Directory containing character voice subdirectories")
+    exaggeration: float = Field(default=0.1, description="Controls vocal expressiveness (0.0=flat, 1.0=dramatic)")
+    cfg_weight: float = Field(default=3.0, description="Classifier-free guidance strength for voice cloning fidelity")
+    temperature: float = Field(default=0.5, description="Sampling temperature; higher produces more variation")
+    chunk_size: int = Field(default=50, description="Number of tokens per streaming chunk")
+    cache_max_size: int = Field(default=100, description="Max entries in the in-memory audio LRU cache")
 
 
 class DiscordSettings(BaseModel):

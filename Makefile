@@ -1,4 +1,4 @@
-.PHONY: dev fmt lint type-check check test migrate docker-up docker-up-full docker-down docker-db logs
+.PHONY: dev fmt lint type-check check test test-unit test-integration migrate docker-up docker-up-full docker-down docker-db logs
 
 dev:
 	uv run uvicorn --factory doppelganger.app:create_app --reload --host 0.0.0.0 --port 8000
@@ -8,6 +8,12 @@ migrate:
 
 test:
 	uv run pytest tests -v
+
+test-unit:
+	uv run pytest tests -v --ignore=tests/integration
+
+test-integration:
+	uv run pytest tests/integration -v
 
 # FORMAT / LINT
 

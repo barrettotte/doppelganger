@@ -9,11 +9,12 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --no-dev --frozen
+RUN uv sync --no-dev --frozen --extra tts
 
 COPY alembic.ini ./
 COPY alembic/ alembic/
 COPY src/ src/
+COPY voices/ voices/
 
 # Run migrations then start the server
 CMD uv run alembic upgrade head && \

@@ -31,7 +31,6 @@ async def health_check(request: Request) -> HealthResponse:
                 await conn.execute(text("SELECT 1"))
 
             db_status = "connected"
-
         except Exception:
             db_status = "disconnected"
 
@@ -46,9 +45,17 @@ async def health_check(request: Request) -> HealthResponse:
     else:
         status = "degraded"
 
+    voice_registry = getattr(request.app.state, "voice_registry", None)
+    voices_loaded = voice_registry.size if voice_registry is not None else 0
+
+    audio_cache = getattr(request.app.state, "audio_cache", None)
+    cache_size = audio_cache.size if audio_cache is not None else 0
+
     return HealthResponse(
         status=status,
         database=db_status,
         tts_model=tts_status,
         gpu_available=gpu_available,
+        voices_loaded=voices_loaded,
+        cache_size=cache_size,
     )
