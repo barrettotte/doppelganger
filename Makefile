@@ -1,4 +1,4 @@
-.PHONY: dev fmt lint type-check check test test-unit test-integration migrate docker-up docker-down docker-db psql
+.PHONY: dev fmt lint type-check check test test-unit test-integration migrate docker-up docker-down docker-db psql frontend-install frontend-dev frontend
 
 dev:	migrate
 	uv run uvicorn --factory doppelganger.app:create_app --reload --host 0.0.0.0 --port 8000
@@ -41,3 +41,14 @@ docker-db:
 
 psql:	docker-db
 	docker compose exec postgres psql -U doppelganger -d doppelganger
+
+# FRONTEND
+
+frontend-install:
+	cd frontend && pnpm install
+
+frontend-dev:
+	cd frontend && pnpm dev
+
+frontend:
+	cd frontend && pnpm build
