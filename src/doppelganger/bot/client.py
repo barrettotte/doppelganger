@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from doppelganger.bot.queue import RateLimiter, TTSQueue
 from doppelganger.config import DiscordSettings
 from doppelganger.tts.cache import AudioCache
 from doppelganger.tts.service import TTSService
@@ -36,6 +37,8 @@ class DoppelgangerBot(commands.Bot):
         self.voice_registry = voice_registry
         self.audio_cache = audio_cache
         self.db_engine = db_engine
+        self.tts_queue = TTSQueue(max_depth=settings.max_queue_depth)
+        self.rate_limiter = RateLimiter(requests_per_minute=settings.requests_per_minute)
 
     async def setup_hook(self) -> None:
         """Load cogs and sync slash commands."""

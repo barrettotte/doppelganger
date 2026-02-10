@@ -6,25 +6,25 @@ from doppelganger.tts.cache import AudioCache
 def test_miss_returns_none() -> None:
     """Cache miss returns None."""
     cache = AudioCache(max_size=10)
-    assert cache.get("shane-gillis", "hello") is None
+    assert cache.get("gandalf", "hello") is None
 
 
 def test_hit_returns_bytes() -> None:
     """Cache hit returns stored bytes."""
     cache = AudioCache(max_size=10)
     data = b"wav-data-here"
-    cache.put("shane-gillis", "hello", data)
-    assert cache.get("shane-gillis", "hello") == data
+    cache.put("gandalf", "hello", data)
+    assert cache.get("gandalf", "hello") == data
 
 
 def test_different_characters_different_keys() -> None:
     """Same text with different characters are separate entries."""
     cache = AudioCache(max_size=10)
-    cache.put("shane-gillis", "hello", b"shane-gillis-audio")
-    cache.put("joe-rogan", "hello", b"joe-rogan-audio")
+    cache.put("gandalf", "hello", b"gandalf-audio")
+    cache.put("gollum", "hello", b"gollum-audio")
 
-    assert cache.get("shane-gillis", "hello") == b"shane-gillis-audio"
-    assert cache.get("joe-rogan", "hello") == b"joe-rogan-audio"
+    assert cache.get("gandalf", "hello") == b"gandalf-audio"
+    assert cache.get("gollum", "hello") == b"gollum-audio"
 
 
 def test_lru_eviction() -> None:

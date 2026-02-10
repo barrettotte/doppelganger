@@ -25,7 +25,7 @@ def _make_voice(voices_dir: Path, name: str) -> None:
 @pytest.fixture
 def voices_dir(tmp_path: Path) -> Path:
     d = tmp_path / "voices"
-    _make_voice(d, "shane-gillis")
+    _make_voice(d, "gandalf")
     return d
 
 
@@ -78,7 +78,7 @@ def test_not_loaded_raises(tts_settings: TTSSettings, registry: VoiceRegistry) -
     """Generating without loading the model raises TTSModelNotLoadedError."""
     service = TTSService(tts_settings, registry)
     with pytest.raises(TTSModelNotLoadedError):
-        service.generate("shane-gillis", "hello")
+        service.generate("gandalf", "hello")
 
 
 def test_is_loaded_property(tts_settings: TTSSettings, registry: VoiceRegistry) -> None:
@@ -123,7 +123,7 @@ def test_generate_returns_result(
 
     # Mock _tensor_to_wav_bytes to avoid deep torch internals
     service._tensor_to_wav_bytes = MagicMock(return_value=b"RIFF-wav-data")
-    result = service.generate("shane-gillis", "hello world")
+    result = service.generate("gandalf", "hello world")
 
     assert result.audio_bytes == b"RIFF-wav-data"
     assert result.sample_rate == 24000
@@ -145,7 +145,7 @@ def test_oom_caught(
     service.load_model()
 
     with pytest.raises(TTSOutOfMemoryError):
-        service.generate("shane-gillis", "hello")
+        service.generate("gandalf", "hello")
 
 
 def test_stream_yields_chunks(
@@ -165,7 +165,7 @@ def test_stream_yields_chunks(
     service = TTSService(tts_settings, registry)
     service.load_model()
     service._tensor_to_wav_bytes = MagicMock(return_value=b"chunk-data")
-    chunks = list(service.generate_stream("shane-gillis", "hello"))
+    chunks = list(service.generate_stream("gandalf", "hello"))
 
     assert len(chunks) == 2
     assert chunks[0].chunk_index == 0

@@ -22,7 +22,7 @@ async def test_generate_returns_wav(app: MagicMock, client: AsyncClient) -> None
 
     response = await client.post(
         "/api/tts/generate",
-        json={"character": "shane-gillis", "text": "hello world"},
+        json={"character": "gandalf", "text": "hello world"},
     )
     assert response.status_code == 200
     assert response.headers["content-type"] == "audio/wav"
@@ -48,7 +48,7 @@ async def test_generate_503_oom(app: MagicMock, client: AsyncClient) -> None:
 
     response = await client.post(
         "/api/tts/generate",
-        json={"character": "shane-gillis", "text": "hello"},
+        json={"character": "gandalf", "text": "hello"},
     )
     assert response.status_code == 503
 
@@ -60,7 +60,7 @@ async def test_generate_503_model_not_loaded(app: MagicMock, client: AsyncClient
 
     response = await client.post(
         "/api/tts/generate",
-        json={"character": "shane-gillis", "text": "hello"},
+        json={"character": "gandalf", "text": "hello"},
     )
     assert response.status_code == 503
 
@@ -68,11 +68,11 @@ async def test_generate_503_model_not_loaded(app: MagicMock, client: AsyncClient
 @pytest.mark.asyncio
 async def test_generate_cache_hit(app: MagicMock, client: AsyncClient) -> None:
     """Cached results skip the TTS service call."""
-    app.state.audio_cache.put("shane-gillis", "hello", b"cached-wav")
+    app.state.audio_cache.put("gandalf", "hello", b"cached-wav")
 
     response = await client.post(
         "/api/tts/generate",
-        json={"character": "shane-gillis", "text": "hello"},
+        json={"character": "gandalf", "text": "hello"},
     )
     assert response.status_code == 200
     assert response.content == b"cached-wav"

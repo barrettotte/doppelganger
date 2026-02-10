@@ -9,13 +9,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class DatabaseSettings(BaseModel):
     """PostgreSQL connection settings."""
 
-    host: str = "localhost"
-    port: int = 5432
-    user: str = "doppelganger"
-    password: SecretStr = SecretStr("doppelganger")
-    name: str = "doppelganger"
-    pool_size: int = 5
-    pool_max_overflow: int = 10
+    host: str = Field(default="localhost", description="Database server hostname")
+    port: int = Field(default=5432, description="Database server port")
+    user: str = Field(default="doppelganger", description="Database username")
+    password: SecretStr = Field(default=SecretStr("doppelganger"), description="Database password")
+    name: str = Field(default="doppelganger", description="Database name")
+    pool_size: int = Field(default=5, description="Number of persistent connections in the pool")
+    pool_max_overflow: int = Field(default=10, description="Max temporary connections above pool_size")
 
     @property
     def async_url(self) -> str:
@@ -46,13 +46,15 @@ class TTSSettings(BaseModel):
 class DiscordSettings(BaseModel):
     """Discord bot settings."""
 
-    token: SecretStr = SecretStr("")
-    guild_id: str = ""
-    required_role_id: str = ""
-    cooldown_seconds: int = 5
-    command_prefix: str = "!"
-    entrance_sound: str = ""
-    max_text_length: int = 500
+    token: SecretStr = Field(default=SecretStr(""), description="Discord bot token from the developer portal")
+    guild_id: str = Field(default="", description="Discord server ID for guild-scoped slash commands")
+    required_role_id: str = Field(default="", description="Role ID required to use the bot; empty allows everyone")
+    cooldown_seconds: int = Field(default=5, description="Per-guild cooldown between TTS plays in seconds")
+    command_prefix: str = Field(default="!", description="Prefix for text-based commands (slash commands are always /)")
+    entrance_sound: str = Field(default="", description="Path to a WAV file played when the bot joins a voice channel")
+    max_text_length: int = Field(default=500, description="Max characters per /say request (hallucination starts ~500)")
+    max_queue_depth: int = Field(default=20, description="Max pending requests in the TTS queue before rejecting")
+    requests_per_minute: int = Field(default=3, description="Per-user rate limit for /say requests per rolling minute")
 
 
 class Settings(BaseSettings):
@@ -66,14 +68,14 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    debug: bool = False
-    host: str = "0.0.0.0"
-    port: int = 8000
-    allowed_origins: list[str] = ["*"]
+    debug: bool = Field(default=False, description="Enable debug mode with verbose logging")
+    host: str = Field(default="0.0.0.0", description="Host address to bind the API server to")
+    port: int = Field(default=8000, description="Port to bind the API server to")
+    allowed_origins: list[str] = Field(default=["*"], description="CORS allowed origins for the API")
 
-    database: DatabaseSettings = DatabaseSettings()
-    tts: TTSSettings = TTSSettings()
-    discord: DiscordSettings = DiscordSettings()
+    database: DatabaseSettings = Field(default_factory=DatabaseSettings, description="PostgreSQL connection settings")
+    tts: TTSSettings = Field(default_factory=TTSSettings, description="TTS engine and voice settings")
+    discord: DiscordSettings = Field(default_factory=DiscordSettings, description="Discord bot settings")
 
 
 @lru_cache(maxsize=1)

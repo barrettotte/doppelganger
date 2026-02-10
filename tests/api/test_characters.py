@@ -2,13 +2,13 @@
 
 import io
 import wave
-from pathlib import Path
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import AsyncClient
 
-from doppelganger.tts.voice_registry import VoiceRegistry
+_NOW = datetime(2026, 1, 1)
 
 
 def _make_wav_bytes(duration_seconds: float = 10.0, sample_rate: int = 22050) -> bytes:
@@ -25,9 +25,25 @@ def _make_wav_bytes(duration_seconds: float = 10.0, sample_rate: int = 22050) ->
     return buf.getvalue()
 
 
+def _mock_db_for_list(rows: list[dict[str, object]]) -> MagicMock:
+    """Create a mock DB engine whose connect().execute().mappings().all() returns the given rows."""
+    engine = MagicMock()
+    conn = AsyncMock()
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.all.return_value = rows
+    conn.execute = AsyncMock(return_value=execute_result)
+
+    ctx = AsyncMock()
+    ctx.__aenter__.return_value = conn
+    engine.connect.return_value = ctx
+    return engine
+
+
 @pytest.mark.asyncio
-async def test_list_empty(client: AsyncClient) -> None:
-    """GET /api/characters returns empty list when no voices registered."""
+async def test_list_empty(app: MagicMock, client: AsyncClient) -> None:
+    """GET /api/characters returns empty list when no characters exist."""
+    app.state.db_engine = _mock_db_for_list([])
+
     response = await client.get("/api/characters")
     assert response.status_code == 200
 
@@ -37,22 +53,22 @@ async def test_list_empty(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_populated(app: MagicMock, client: AsyncClient, tmp_path: Path) -> None:
-    """GET /api/characters returns registered voices."""
-    voices_dir = tmp_path / "list-voices"
-    voices_dir.mkdir()
-    char_dir = voices_dir / "shane-gillis"
-    char_dir.mkdir()
-    (char_dir / "reference.wav").write_bytes(b"RIFF" + b"\x00" * 100)
-
-    registry = VoiceRegistry(str(voices_dir))
-    registry.scan()
-    app.state.voice_registry = registry
+async def test_list_populated(app: MagicMock, client: AsyncClient) -> None:
+    """GET /api/characters returns characters with IDs from the database."""
+    app.state.db_engine = _mock_db_for_list(
+        [
+            {"id": 1, "name": "gandalf", "reference_audio_path": "/voices/gandalf/reference.wav", "created_at": _NOW},
+            {"id": 2, "name": "gollum", "reference_audio_path": "/voices/gollum/reference.wav", "created_at": _NOW},
+        ]
+    )
 
     response = await client.get("/api/characters")
     data = response.json()
-    assert data["count"] == 1
-    assert data["characters"][0]["name"] == "shane-gillis"
+    assert data["count"] == 2
+    assert data["characters"][0]["name"] == "gandalf"
+    assert data["characters"][0]["id"] == 1
+    assert data["characters"][1]["name"] == "gollum"
+    assert data["characters"][1]["id"] == 2
 
 
 @pytest.mark.asyncio

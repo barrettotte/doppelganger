@@ -1,9 +1,9 @@
 .PHONY: dev fmt lint type-check check test test-unit test-integration migrate docker-up docker-down docker-db psql
 
-dev:
+dev:	migrate
 	uv run uvicorn --factory doppelganger.app:create_app --reload --host 0.0.0.0 --port 8000
 
-migrate:
+migrate:	docker-db
 	uv run alembic upgrade head
 
 test:

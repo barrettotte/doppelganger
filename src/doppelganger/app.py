@@ -13,10 +13,13 @@ from doppelganger.api.characters import router as characters_router
 from doppelganger.api.errors import register_error_handlers
 from doppelganger.api.health import router as health_router
 from doppelganger.api.middleware import RequestIDMiddleware
+from doppelganger.api.queue import router as queue_router
 from doppelganger.api.tts import router as tts_router
 from doppelganger.bot.client import DoppelgangerBot
 from doppelganger.config import get_settings
 from doppelganger.db.engine import create_db_engine, dispose_db_engine
+from doppelganger.db.queries.characters import sync_voices_to_db
+from doppelganger.db.queries.tts_requests import fail_stale_requests
 from doppelganger.tts.cache import AudioCache
 from doppelganger.tts.service import TTSService
 from doppelganger.tts.voice_registry import VoiceRegistry
@@ -49,9 +52,29 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     engine = create_db_engine(settings)
     app.state.db_engine = engine
 
+    try:
+        async with engine.begin() as conn:
+            stale_count = await fail_stale_requests(conn)
+
+            if stale_count > 0:
+                logger.info("Marked %d stale request(s) as failed on startup", stale_count)
+
+    except Exception:
+        logger.warning("Could not clean up stale requests (DB may not be ready)", exc_info=True)
+
     registry = VoiceRegistry(settings.tts.voices_dir)
     registry.scan()
     app.state.voice_registry = registry
+
+    try:
+        async with engine.begin() as conn:
+            synced = await sync_voices_to_db(conn, registry)
+
+            if synced > 0:
+                logger.info("Synced %d filesystem voice(s) to database", synced)
+
+    except Exception:
+        logger.warning("Could not sync voices to database (DB may not be ready)", exc_info=True)
 
     cache = AudioCache(max_size=settings.tts.cache_max_size)
     app.state.audio_cache = cache
@@ -116,5 +139,6 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(tts_router)
     app.include_router(characters_router)
+    app.include_router(queue_router)
 
     return app

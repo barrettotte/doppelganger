@@ -8,10 +8,11 @@ from fastapi import APIRouter, HTTPException, Request, UploadFile
 from sqlalchemy import text
 from starlette.responses import Response
 
+from doppelganger.db.queries.characters import list_characters as db_list_characters
+from doppelganger.db.types import CharacterRow
 from doppelganger.models.schemas import (
     CharacterListResponse,
     CharacterResponse,
-    CharacterVoiceResponse,
 )
 from doppelganger.tts.audio_validation import AudioValidationError, validate_reference_audio
 
@@ -21,15 +22,20 @@ router = APIRouter(prefix="/api/characters", tags=["characters"])
 
 @router.get("", response_model=CharacterListResponse)
 async def list_characters(request: Request) -> CharacterListResponse:
-    """List all registered character voices."""
-    registry = request.app.state.voice_registry
-    voices = registry.list_voices()
+    """List all registered characters with their IDs."""
+    engine = request.app.state.db_engine
+
+    async with engine.connect() as conn:
+        rows = await db_list_characters(conn)
 
     return CharacterListResponse(
         characters=[
-            CharacterVoiceResponse(name=v.name, reference_audio_path=str(v.reference_audio_path)) for v in voices
+            CharacterResponse(
+                id=r.id, name=r.name, reference_audio_path=r.reference_audio_path, created_at=r.created_at
+            )
+            for r in rows
         ],
-        count=len(voices),
+        count=len(rows),
     )
 
 
@@ -60,16 +66,16 @@ async def create_character(request: Request, name: str, audio: UploadFile) -> Ch
     async with engine.begin() as conn:
         sql = text("INSERT INTO characters (name, reference_audio_path) VALUES (:name, :path) RETURNING *")
         result = await conn.execute(sql, {"name": name, "path": str(ref_path)})
-        row = dict(result.mappings().one())
+        row = CharacterRow(**result.mappings().one())
 
     registry.refresh()
     logger.info("Created character: %s", name)
 
     return CharacterResponse(
-        id=row["id"],
-        name=row["name"],
-        reference_audio_path=row["reference_audio_path"],
-        created_at=row["created_at"],
+        id=row.id,
+        name=row.name,
+        reference_audio_path=row.reference_audio_path,
+        created_at=row.created_at,
     )
 
 

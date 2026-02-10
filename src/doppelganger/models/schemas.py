@@ -80,17 +80,10 @@ class AuditLogResponse(BaseModel):
     created_at: datetime
 
 
-class CharacterVoiceResponse(BaseModel):
-    """Response model for a voice registry entry."""
-
-    name: str
-    reference_audio_path: str
-
-
 class CharacterListResponse(BaseModel):
     """Response model for listing all characters."""
 
-    characters: list[CharacterVoiceResponse]
+    characters: list[CharacterResponse]
     count: int
 
 
@@ -105,3 +98,30 @@ class CharacterCreateRequest(BaseModel):
     """Request model for creating a character (name field for multipart)."""
 
     name: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
+
+
+class QueueItemResponse(BaseModel):
+    """Response model for a single queue item."""
+
+    request_id: int
+    user_id: int
+    discord_id: str
+    character: str
+    text: str
+    submitted_at: float
+
+
+class QueueStateResponse(BaseModel):
+    """Response model for the current queue state."""
+
+    depth: int
+    max_depth: int
+    processing: QueueItemResponse | None = None
+    pending: list[QueueItemResponse]
+
+
+class QueueActionResponse(BaseModel):
+    """Response model for queue cancel/bump actions."""
+
+    success: bool
+    message: str

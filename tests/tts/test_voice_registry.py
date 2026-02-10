@@ -35,29 +35,29 @@ def test_missing_dir(tmp_path: Path) -> None:
 def test_valid_voices(tmp_path: Path) -> None:
     """Registry finds voices with reference.wav files."""
     voices_dir = tmp_path / "voices"
-    _make_voice(voices_dir, "shane-gillis")
-    _make_voice(voices_dir, "joe-rogan")
+    _make_voice(voices_dir, "gandalf")
+    _make_voice(voices_dir, "gollum")
 
     registry = VoiceRegistry(str(voices_dir))
     registry.scan()
     assert registry.size == 2
 
     names = [v.name for v in registry.list_voices()]
-    assert "shane-gillis" in names
-    assert "joe-rogan" in names
+    assert "gandalf" in names
+    assert "gollum" in names
 
 
 def test_missing_reference_wav_skipped(tmp_path: Path) -> None:
     """Directories without reference.wav are skipped."""
     voices_dir = tmp_path / "voices"
-    _make_voice(voices_dir, "shane-gillis")
+    _make_voice(voices_dir, "gandalf")
     (voices_dir / "empty-char").mkdir()
 
     registry = VoiceRegistry(str(voices_dir))
     registry.scan()
 
     assert registry.size == 1
-    assert registry.get_voice("shane-gillis") is not None
+    assert registry.get_voice("gandalf") is not None
     assert registry.get_voice("empty-char") is None
 
 
@@ -75,24 +75,24 @@ def test_get_unknown_voice(tmp_path: Path) -> None:
 def test_get_voice_case_insensitive(tmp_path: Path) -> None:
     """Voice lookup is case-insensitive."""
     voices_dir = tmp_path / "voices"
-    _make_voice(voices_dir, "shane-gillis")
+    _make_voice(voices_dir, "gandalf")
 
     registry = VoiceRegistry(str(voices_dir))
     registry.scan()
 
-    assert registry.get_voice("shane-gillis") is not None
-    assert registry.get_voice("SHANE-GILLIS") is not None
+    assert registry.get_voice("gandalf") is not None
+    assert registry.get_voice("GANDALF") is not None
 
 
 def test_refresh_picks_up_new_voices(tmp_path: Path) -> None:
     """Refresh re-scans and finds newly added voices."""
     voices_dir = tmp_path / "voices"
-    _make_voice(voices_dir, "shane-gillis")
+    _make_voice(voices_dir, "gandalf")
 
     registry = VoiceRegistry(str(voices_dir))
     registry.scan()
     assert registry.size == 1
 
-    _make_voice(voices_dir, "joe-rogan")
+    _make_voice(voices_dir, "gollum")
     registry.refresh()
     assert registry.size == 2
