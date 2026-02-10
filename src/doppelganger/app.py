@@ -5,16 +5,23 @@ import logging
 import warnings
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
+from doppelganger.api.audit import router as audit_router
 from doppelganger.api.characters import router as characters_router
 from doppelganger.api.errors import register_error_handlers
 from doppelganger.api.health import router as health_router
 from doppelganger.api.middleware import RequestIDMiddleware
 from doppelganger.api.queue import router as queue_router
+from doppelganger.api.requests import router as requests_router
+from doppelganger.api.status import router as status_router
 from doppelganger.api.tts import router as tts_router
+from doppelganger.api.users import router as users_router
 from doppelganger.bot.client import DoppelgangerBot
 from doppelganger.config import get_settings
 from doppelganger.db.engine import create_db_engine, dispose_db_engine
@@ -140,5 +147,27 @@ def create_app() -> FastAPI:
     app.include_router(tts_router)
     app.include_router(characters_router)
     app.include_router(queue_router)
+    app.include_router(users_router)
+    app.include_router(requests_router)
+    app.include_router(audit_router)
+    app.include_router(status_router)
+
+    dist_dir = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+    if dist_dir.is_dir():
+        assets_dir = dist_dir / "assets"
+
+        if assets_dir.is_dir():
+            app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="static-assets")
+
+        index_html = dist_dir / "index.html"
+
+        @app.get("/{path:path}", include_in_schema=False)
+        async def spa_fallback(path: str) -> FileResponse:
+            """Serve the SPA index.html for all non-API routes."""
+            file_path = dist_dir / path
+            if file_path.is_file() and file_path.resolve().is_relative_to(dist_dir.resolve()):
+                return FileResponse(str(file_path))
+
+            return FileResponse(str(index_html))
 
     return app

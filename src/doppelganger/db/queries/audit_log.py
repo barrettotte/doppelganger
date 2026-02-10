@@ -35,3 +35,18 @@ async def list_audit_entries(conn: AsyncConnection, *, limit: int = 100) -> list
 
     result = await conn.execute(sql, params)
     return [AuditLogRow(**row) for row in result.mappings().all()]
+
+
+async def list_audit_entries_filtered(
+    conn: AsyncConnection, *, limit: int = 100, action: str | None = None
+) -> list[AuditLogRow]:
+    """Fetch recent audit log entries with optional action filter."""
+    if action is not None:
+        sql = text("SELECT * FROM audit_log WHERE action = :action ORDER BY created_at DESC LIMIT :limit")
+        params: dict[str, Any] = {"limit": limit, "action": action}
+        result = await conn.execute(sql, params)
+    else:
+        sql = text("SELECT * FROM audit_log ORDER BY created_at DESC LIMIT :limit")
+        result = await conn.execute(sql, {"limit": limit})
+
+    return [AuditLogRow(**row) for row in result.mappings().all()]

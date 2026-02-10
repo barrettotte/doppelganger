@@ -19,7 +19,7 @@ from doppelganger.db.queries.tts_requests import (
     mark_tts_request_started,
     update_tts_request_status,
 )
-from doppelganger.db.queries.users import create_user, get_user_by_discord_id
+from doppelganger.db.queries.users import create_user, get_user_by_discord_id, update_username
 
 logger = logging.getLogger(__name__)
 
@@ -99,8 +99,6 @@ class TTSCog(commands.Cog):
                 details={"character": item.character, "text": item.text, "duration_ms": duration_ms},
             )
 
-        preview = item.text[:50] + "..." if len(item.text) > 50 else item.text
-        await item.interaction.followup.send(f"Playing '{preview}' as {item.character}")
 
     @app_commands.command(name="say", description="Generate TTS audio and play it in a voice channel")
     @app_commands.describe(
@@ -162,14 +160,21 @@ class TTSCog(commands.Cog):
             await interaction.followup.send("Please wait a few seconds before the next TTS request.")
             return
 
+        display_name = interaction.user.display_name
+
         try:
             async with self.bot.db_engine.begin() as conn:
                 user = await get_user_by_discord_id(conn, discord_id)
+
                 if user is None:
-                    user = await create_user(conn, discord_id)
+                    user = await create_user(conn, discord_id, username=display_name)
+                elif user.username != display_name:
+                    await update_username(conn, user.id, display_name)
+
                 user_id: int = user.id
                 request_row = await create_tts_request(conn, user_id, character, text)
                 request_id: int = request_row.id
+
         except Exception:
             logger.exception("Error creating TTS request")
             await interaction.followup.send("An error occurred while processing your request.")

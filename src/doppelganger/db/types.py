@@ -12,6 +12,7 @@ class UserRow:
     discord_id: str
     blacklisted: bool
     created_at: datetime
+    username: str | None = None
 
 
 @dataclass
