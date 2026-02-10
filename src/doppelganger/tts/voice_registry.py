@@ -61,6 +61,11 @@ class VoiceRegistry:
         self.scan()
 
     @property
+    def voices_dir(self) -> Path:
+        """The directory containing voice reference audio files."""
+        return self._voices_dir
+
+    @property
     def size(self) -> int:
         """Number of registered voices."""
         return len(self._voices)

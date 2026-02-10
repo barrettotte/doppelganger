@@ -6,7 +6,7 @@ from dataclasses import asdict
 
 from fastapi import APIRouter, Query, Request
 
-from doppelganger.db.queries.audit_log import list_audit_entries_filtered
+from doppelganger.db.queries.audit_log import list_audit_entries
 from doppelganger.models.schemas import AuditLogListResponse, AuditLogResponse
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ async def list_audit(
     """List audit log entries with optional action filter."""
 
     async with request.app.state.db_engine.connect() as conn:
-        rows = await list_audit_entries_filtered(conn, limit=limit, action=action)
+        rows = await list_audit_entries(conn, limit=limit, action=action)
 
     entries = []
     for row in rows:

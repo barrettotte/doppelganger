@@ -8,10 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from doppelganger.db.types import TTSRequestRow
 
 
-async def create_tts_request(conn: AsyncConnection, user_id: int, voice: str, request_text: str) -> TTSRequestRow:
+async def create_tts_request(conn: AsyncConnection, user_id: int, character: str, request_text: str) -> TTSRequestRow:
     """Insert a new TTS request and return the created row."""
-    sql = text("INSERT INTO tts_requests (user_id, character, text) VALUES (:user_id, :voice, :text) RETURNING *")
-    params: dict[str, Any] = {"user_id": user_id, "voice": voice, "text": request_text}
+    sql = text("INSERT INTO tts_requests (user_id, character, text) VALUES (:user_id, :character, :text) RETURNING *")
+    params: dict[str, Any] = {"user_id": user_id, "character": character, "text": request_text}
 
     result = await conn.execute(sql, params)
     return TTSRequestRow(**result.mappings().one())
@@ -52,15 +52,19 @@ async def mark_tts_request_completed(conn: AsyncConnection, request_id: int, dur
     return None if row is None else TTSRequestRow(**row)
 
 
-async def list_tts_requests(conn: AsyncConnection, *, status: str | None = None) -> list[TTSRequestRow]:
-    """Fetch TTS requests, optionally filtered by status."""
+async def list_tts_requests(
+    conn: AsyncConnection, *, status: str | None = None, limit: int = 50, offset: int = 0
+) -> list[TTSRequestRow]:
+    """Fetch TTS requests, optionally filtered by status, with pagination."""
     if status is not None:
-        sql = text("SELECT * FROM tts_requests WHERE status = :status ORDER BY created_at DESC")
-        params = {"status": status}
+        sql = text(
+            "SELECT * FROM tts_requests WHERE status = :status ORDER BY created_at DESC LIMIT :limit OFFSET :offset"
+        )
+        params: dict[str, Any] = {"status": status, "limit": limit, "offset": offset}
         result = await conn.execute(sql, params)
     else:
-        sql = text("SELECT * FROM tts_requests ORDER BY created_at DESC")
-        result = await conn.execute(sql)
+        sql = text("SELECT * FROM tts_requests ORDER BY created_at DESC LIMIT :limit OFFSET :offset")
+        result = await conn.execute(sql, {"limit": limit, "offset": offset})
 
     return [TTSRequestRow(**row) for row in result.mappings().all()]
 

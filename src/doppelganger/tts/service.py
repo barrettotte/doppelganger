@@ -75,6 +75,11 @@ class TTSService:
             logger.info("TTS model unloaded")
 
     @property
+    def device(self) -> str:
+        """The device the TTS model runs on (e.g. 'cpu', 'cuda')."""
+        return self._settings.device
+
+    @property
     def is_loaded(self) -> bool:
         """Whether the TTS model is loaded and ready."""
         return self._model is not None
@@ -97,6 +102,7 @@ class TTSService:
             raise TTSGenerationError("Model returned unexpected type instead of Tensor")
 
         tensor = audio_tensor.unsqueeze(0) if audio_tensor.dim() == 1 else audio_tensor
+        # Clamp to [-1, 1] then scale to signed 16-bit PCM range (max 32767)
         tensor = tensor.cpu().clamp(-1.0, 1.0)
         pcm16 = (tensor * 32767).to(torch.int16)
 

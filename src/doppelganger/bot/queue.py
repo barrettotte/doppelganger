@@ -9,6 +9,9 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Truncate text for API preview responses
+_TEXT_PREVIEW_LENGTH = 50
+
 
 @dataclass
 class QueueItemState:
@@ -49,9 +52,22 @@ class QueueItem:
 class RateLimiter:
     """Sliding-window per-user rate limiter."""
 
+    _WINDOW_SECONDS = 60
+
     def __init__(self, requests_per_minute: int) -> None:
         self._max_rpm = requests_per_minute
         self._timestamps: dict[str, deque[float]] = {}
+
+    def _cleanup(self, user_id: str, now: float) -> deque[float]:
+        """Remove expired timestamps for a user and return their deque."""
+        if user_id not in self._timestamps:
+            self._timestamps[user_id] = deque()
+
+        timestamps = self._timestamps[user_id]
+        while timestamps and now - timestamps[0] > self._WINDOW_SECONDS:
+            timestamps.popleft()
+
+        return timestamps
 
     def try_acquire(self, user_id: str) -> bool:
         """Check if the user is within rate limits and record the attempt if allowed."""
@@ -59,13 +75,7 @@ class RateLimiter:
             return True
 
         now = time.monotonic()
-
-        if user_id not in self._timestamps:
-            self._timestamps[user_id] = deque()
-
-        timestamps = self._timestamps[user_id]
-        while timestamps and now - timestamps[0] > 60:
-            timestamps.popleft()
+        timestamps = self._cleanup(user_id, now)
 
         if len(timestamps) >= self._max_rpm:
             return False
@@ -80,13 +90,10 @@ class RateLimiter:
 
         now = time.monotonic()
 
-        timestamps = self._timestamps.get(user_id)
-        if timestamps is None:
+        if user_id not in self._timestamps:
             return self._max_rpm
 
-        while timestamps and now - timestamps[0] > 60:
-            timestamps.popleft()
-
+        timestamps = self._cleanup(user_id, now)
         return max(0, self._max_rpm - len(timestamps))
 
 
@@ -178,7 +185,7 @@ class TTSQueue:
             user_id=item.user_id,
             discord_id=item.discord_id,
             character=item.character,
-            text=item.text[:50],
+            text=item.text[:_TEXT_PREVIEW_LENGTH],
             submitted_at=item.submitted_at,
         )
 

@@ -28,11 +28,9 @@ async def list_all_requests(
 
     async with request.app.state.db_engine.connect() as conn:
         total = await count_tts_requests(conn, status=status)
-        rows = await list_tts_requests(conn, status=status)
+        rows = await list_tts_requests(conn, status=status, limit=limit, offset=offset)
 
-    # Apply offset/limit in Python since the existing query doesn't support it
-    sliced = rows[offset : offset + limit]
-    requests_list = [TTSRequestResponse(**asdict(row)) for row in sliced]
+    requests_list = [TTSRequestResponse(**asdict(row)) for row in rows]
     return TTSRequestListResponse(requests=requests_list, count=len(requests_list), total=total)
 
 

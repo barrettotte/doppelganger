@@ -46,6 +46,8 @@ class VoiceManager:
         loop = asyncio.get_running_loop()
 
         def _after_callback(error: Exception | None) -> None:
+            """Discord's play() callback runs in a thread pool, so we need
+            call_soon_threadsafe to signal the event back to the async loop."""
             if error is not None:
                 logger.error("Playback error in guild %s: %s", guild_id, error)
             loop.call_soon_threadsafe(done_event.set)

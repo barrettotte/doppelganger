@@ -57,6 +57,8 @@ class TTSCog(commands.Cog):
 
             except Exception:
                 logger.exception("Error processing queue item %d", item.request_id)
+                # DB update and Discord followup are independent - if one fails,
+                # we still want to attempt the other so neither is left hanging.
                 try:
                     async with self.bot.db_engine.begin() as conn:
                         await update_tts_request_status(conn, item.request_id, "failed")
@@ -98,7 +100,6 @@ class TTSCog(commands.Cog):
                 user_id=item.user_id,
                 details={"character": item.character, "text": item.text, "duration_ms": duration_ms},
             )
-
 
     @app_commands.command(name="say", description="Generate TTS audio and play it in a voice channel")
     @app_commands.describe(

@@ -11,6 +11,16 @@ from doppelganger.tts.voice_registry import VoiceRegistry
 logger = logging.getLogger(__name__)
 
 
+async def get_character(conn: AsyncConnection, character_id: int) -> CharacterRow | None:
+    """Fetch a character by ID."""
+    sql = text("SELECT * FROM characters WHERE id = :id")
+    params = {"id": character_id}
+
+    result = await conn.execute(sql, params)
+    row = result.mappings().first()
+    return None if row is None else CharacterRow(**row)
+
+
 async def get_character_by_name(conn: AsyncConnection, name: str) -> CharacterRow | None:
     """Fetch a character by name."""
     sql = text("SELECT * FROM characters WHERE name = :name")

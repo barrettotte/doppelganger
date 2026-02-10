@@ -69,6 +69,9 @@ async def stream_speech(request: Request, body: TTSGenerateRequest) -> Streaming
     tts_service = request.app.state.tts_service
     queue: asyncio.Queue[bytes | None] = asyncio.Queue()
 
+    # Producer-consumer pattern: _producer generates audio chunks in a thread
+    # pool and pushes them into an asyncio.Queue; _stream yields from the
+    # queue so StreamingResponse can send bytes as they become available.
     async def _producer() -> None:
         loop = asyncio.get_running_loop()
         try:

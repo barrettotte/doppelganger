@@ -28,6 +28,7 @@ async def get_bot_status(request: Request) -> BotStatusResponse:
 
     uptime = time.monotonic() - bot._started_at
     guilds = [GuildInfo(id=str(g.id), name=g.name, member_count=g.member_count or 0) for g in bot.guilds]
+    tts_service = getattr(request.app.state, "tts_service", None)
 
     config = {
         "max_text_length": bot.settings.max_text_length,
@@ -35,9 +36,7 @@ async def get_bot_status(request: Request) -> BotStatusResponse:
         "max_queue_depth": bot.settings.max_queue_depth,
         "requests_per_minute": bot.settings.requests_per_minute,
         "required_role_id": bot.settings.required_role_id or "(none)",
-        "tts_device": getattr(request.app.state, "tts_service", None)
-        and request.app.state.tts_service._settings.device
-        or "unknown",
+        "tts_device": tts_service.device if tts_service else "unknown",
     }
 
     username = str(bot.user) if bot.user else None

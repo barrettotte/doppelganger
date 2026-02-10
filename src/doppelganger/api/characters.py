@@ -5,11 +5,20 @@ import shutil
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile
-from sqlalchemy import text
 from starlette.responses import Response
 
-from doppelganger.db.queries.characters import list_characters as db_list_characters
-from doppelganger.db.types import CharacterRow
+from doppelganger.db.queries.characters import (
+    create_character as db_create_character,
+)
+from doppelganger.db.queries.characters import (
+    delete_character as db_delete_character,
+)
+from doppelganger.db.queries.characters import (
+    get_character as db_get_character,
+)
+from doppelganger.db.queries.characters import (
+    list_characters as db_list_characters,
+)
 from doppelganger.models.schemas import (
     CharacterListResponse,
     CharacterResponse,
@@ -56,7 +65,7 @@ async def create_character(request: Request, name: str, audio: UploadFile) -> Ch
     except AudioValidationError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
 
-    voices_dir = Path(request.app.state.voice_registry._voices_dir)
+    voices_dir = registry.voices_dir
     char_dir = voices_dir / name
     char_dir.mkdir(parents=True, exist_ok=True)
     ref_path = char_dir / "reference.wav"
@@ -64,9 +73,7 @@ async def create_character(request: Request, name: str, audio: UploadFile) -> Ch
 
     engine = request.app.state.db_engine
     async with engine.begin() as conn:
-        sql = text("INSERT INTO characters (name, reference_audio_path) VALUES (:name, :path) RETURNING *")
-        result = await conn.execute(sql, {"name": name, "path": str(ref_path)})
-        row = CharacterRow(**result.mappings().one())
+        row = await db_create_character(conn, name, str(ref_path))
 
     registry.refresh()
     logger.info("Created character: %s", name)
@@ -86,22 +93,20 @@ async def delete_character(request: Request, character_id: int) -> Response:
     registry = request.app.state.voice_registry
 
     async with engine.begin() as conn:
-        sql = text("SELECT * FROM characters WHERE id = :id")
-        result = await conn.execute(sql, {"id": character_id})
-        row = result.mappings().first()
+        row = await db_get_character(conn, character_id)
 
         if row is None:
             raise HTTPException(status_code=404, detail="Character not found")
 
-        ref_path = Path(row["reference_audio_path"])
+        ref_path = Path(row.reference_audio_path)
         char_dir = ref_path.parent
 
-        await conn.execute(text("DELETE FROM characters WHERE id = :id"), {"id": character_id})
+        await db_delete_character(conn, character_id)
 
     if char_dir.exists():
         shutil.rmtree(char_dir)
 
     registry.refresh()
-    logger.info("Deleted character id=%d name=%s", character_id, row["name"])
+    logger.info("Deleted character id=%d name=%s", character_id, row.name)
 
     return Response(status_code=204)

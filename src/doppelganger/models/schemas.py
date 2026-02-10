@@ -1,8 +1,11 @@
 """Pydantic request and response models for the API."""
 
+import re
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+_CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
 
 
 class HealthResponse(BaseModel):
@@ -50,7 +53,28 @@ class CharacterResponse(BaseModel):
     created_at: datetime
 
 
-class TTSRequestCreate(BaseModel):
+def _sanitize_text(value: str) -> str:
+    """Strip C0/C1 control characters, preserving tab, newline, and carriage return."""
+    return _CONTROL_CHAR_RE.sub("", value)
+
+
+class _SanitizedTextMixin(BaseModel):
+    """Mixin that strips control characters from the text field."""
+
+    @field_validator("text", check_fields=False)
+    @classmethod
+    def strip_control_chars(cls, v: str) -> str:
+        """Remove control characters from the text field."""
+        cleaned = _sanitize_text(v)
+
+        if not cleaned.strip():
+            msg = "Text must not be empty after sanitization"
+            raise ValueError(msg)
+
+        return cleaned
+
+
+class TTSRequestCreate(_SanitizedTextMixin):
     """Request model for creating a TTS request."""
 
     character: str
@@ -88,7 +112,7 @@ class CharacterListResponse(BaseModel):
     count: int
 
 
-class TTSGenerateRequest(BaseModel):
+class TTSGenerateRequest(_SanitizedTextMixin):
     """Request model for TTS generation."""
 
     character: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")

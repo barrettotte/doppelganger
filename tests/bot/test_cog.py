@@ -285,8 +285,7 @@ class TestProcessItem:
             await cog._process_item(item)
 
         mock_play.assert_awaited_once()
-        interaction.followup.send.assert_awaited()
-        assert "gandalf" in str(interaction.followup.send.call_args)
+        bot.tts_service.generate.assert_called_once_with("gandalf", "Hello world")
 
     async def test_process_item_uses_cache(self, cog: TTSCog, bot: MagicMock) -> None:
         """Cached audio should skip generation."""
