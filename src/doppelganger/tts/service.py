@@ -1,180 +1,70 @@
-"""TTS service wrapping Chatterbox for voice cloning."""
+"""TTS service that dispatches generation requests to registered engines."""
 
-import importlib
-import io
 import logging
-import wave
 from collections.abc import Iterator
-from dataclasses import dataclass
-from typing import Any
 
-from doppelganger.config import TTSSettings
-from doppelganger.tts.exceptions import (
-    TTSError,
-    TTSGenerationError,
-    TTSModelNotLoadedError,
-    TTSOutOfMemoryError,
-    TTSVoiceNotFoundError,
-)
+from doppelganger.tts.engine import EngineType, TTSChunk, TTSEngine, TTSResult
+from doppelganger.tts.exceptions import TTSModelNotLoadedError, TTSVoiceNotFoundError
 from doppelganger.tts.voice_registry import VoiceRegistry
+
+# Re-export for backward compatibility (API tests, bot client import from here)
+__all__ = ["TTSChunk", "TTSResult", "TTSService"]
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
-class TTSResult:
-    """Result of a TTS generation call."""
-
-    audio_bytes: bytes
-    sample_rate: int
-    duration_ms: int
-
-
-@dataclass(frozen=True)
-class TTSChunk:
-    """A chunk of streamed TTS audio."""
-
-    audio_bytes: bytes
-    chunk_index: int
-    is_final: bool
-
-
 class TTSService:
-    """Wraps ChatterboxTTS with voice registry lookup, error handling, and WAV encoding."""
+    """Routes TTS requests to the appropriate engine based on voice configuration."""
 
-    def __init__(self, settings: TTSSettings, registry: VoiceRegistry) -> None:
-        self._settings = settings
+    def __init__(self, registry: VoiceRegistry) -> None:
         self._registry = registry
-        self._model: Any | None = None
+        self._engines: dict[EngineType, TTSEngine] = {}
 
-    def load_model(self) -> None:
-        """Import chatterbox and torchaudio at runtime and load the model."""
-        try:
-            chatterbox_tts = importlib.import_module("chatterbox.tts")
+    def register_engine(self, engine: TTSEngine) -> None:
+        """Register a TTS engine for its engine type."""
+        self._engines[engine.engine_type] = engine
+        logger.info("Registered TTS engine: %s", engine.engine_type.value)
 
-        except ImportError as e:
-            raise RuntimeError("chatterbox-tts is not installed. Install with: uv sync --extra tts") from e
-
-        logger.info("Loading ChatterboxTTS model on device=%s", self._settings.device)
-        self._model = chatterbox_tts.ChatterboxTTS.from_pretrained(device=self._settings.device)
-        logger.info("ChatterboxTTS model loaded successfully")
-
-    def unload_model(self) -> None:
-        """Release the model and free GPU memory."""
-        if self._model is not None:
-            del self._model
-            self._model = None
-
-            try:
-                torch = importlib.import_module("torch")
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-            except ImportError:
-                pass
-
-            logger.info("TTS model unloaded")
-
-    @property
-    def device(self) -> str:
-        """The device the TTS model runs on (e.g. 'cpu', 'cuda')."""
-        return self._settings.device
-
-    @property
-    def is_loaded(self) -> bool:
-        """Whether the TTS model is loaded and ready."""
-        return self._model is not None
-
-    def _require_model(self) -> None:
-        if not self.is_loaded:
-            raise TTSModelNotLoadedError("TTS model is not loaded")
-
-    def _get_voice_path(self, character_name: str) -> str:
+    def _resolve(self, character_name: str) -> tuple[TTSEngine, str]:
+        """Look up the voice entry and return the matching engine and voice path."""
         voice = self._registry.get_voice(character_name)
         if voice is None:
             raise TTSVoiceNotFoundError(f"Voice not found: {character_name}")
-        return str(voice.reference_audio_path)
 
-    def _tensor_to_wav_bytes(self, audio_tensor: Any, sample_rate: int) -> bytes:
-        """Convert a torch tensor to PCM16 WAV bytes for browser compatibility."""
-        torch = importlib.import_module("torch")
+        engine = self._engines.get(voice.engine)
+        if engine is None:
+            raise TTSModelNotLoadedError(f"No engine registered for type: {voice.engine.value}")
 
-        if not isinstance(audio_tensor, torch.Tensor):
-            raise TTSGenerationError("Model returned unexpected type instead of Tensor")
-
-        tensor = audio_tensor.unsqueeze(0) if audio_tensor.dim() == 1 else audio_tensor
-        # Clamp to [-1, 1] then scale to signed 16-bit PCM range (max 32767)
-        tensor = tensor.cpu().clamp(-1.0, 1.0)
-        pcm16 = (tensor * 32767).to(torch.int16)
-
-        buf = io.BytesIO()
-        with wave.open(buf, "wb") as wf:
-            wf.setnchannels(pcm16.shape[0])
-            wf.setsampwidth(2)
-            wf.setframerate(sample_rate)
-            wf.writeframes(pcm16.numpy().tobytes())
-
-        return buf.getvalue()
+        return engine, str(voice.reference_audio_path)
 
     def generate(self, character_name: str, text: str) -> TTSResult:
-        """
-        Generate speech for the given text using the character's voice.
-        This is a blocking call - use run_in_executor from async code.
-        """
-        self._require_model()
-        ref_path = self._get_voice_path(character_name)
-
-        try:
-            wav = self._model.generate(  # type: ignore[union-attr]
-                text,
-                audio_prompt_path=ref_path,
-                exaggeration=self._settings.exaggeration,
-                cfg_weight=self._settings.cfg_weight,
-                temperature=self._settings.temperature,
-            )
-
-        except RuntimeError as e:
-            if "out of memory" in str(e).lower():
-                raise TTSOutOfMemoryError("CUDA out of memory during generation") from e
-            raise TTSGenerationError(f"Generation failed: {e}") from e
-        except Exception as e:
-            raise TTSGenerationError(f"Generation failed: {e}") from e
-
-        sample_rate: int = self._model.sr  # type: ignore[union-attr]
-        audio_bytes = self._tensor_to_wav_bytes(wav, sample_rate)
-
-        torch = importlib.import_module("torch")
-        n_samples = wav.shape[-1] if isinstance(wav, torch.Tensor) else 0
-        duration_ms = int(n_samples / sample_rate * 1000) if sample_rate > 0 else 0
-
-        return TTSResult(audio_bytes=audio_bytes, sample_rate=sample_rate, duration_ms=duration_ms)
+        """Generate speech by delegating to the resolved engine."""
+        engine, voice_path = self._resolve(character_name)
+        return engine.generate(voice_path, text)
 
     def generate_stream(self, character_name: str, text: str) -> Iterator[TTSChunk]:
-        """
-        Stream TTS audio in chunks.
-        This is a blocking iterator - use run_in_executor from async code.
-        """
-        self._require_model()
-        ref_path = self._get_voice_path(character_name)
+        """Stream speech by delegating to the resolved engine."""
+        engine, voice_path = self._resolve(character_name)
+        return engine.generate_stream(voice_path, text)
 
-        try:
-            sample_rate: int = self._model.sr  # type: ignore[union-attr]
-            chunk_iter = self._model.generate_stream(  # type: ignore[union-attr]
-                text,
-                audio_prompt_path=ref_path,
-                exaggeration=self._settings.exaggeration,
-                cfg_weight=self._settings.cfg_weight,
-                temperature=self._settings.temperature,
-            )
+    def load_model(self) -> None:
+        """Load all registered engines."""
+        for engine in self._engines.values():
+            engine.load_model()
 
-            for i, chunk_tensor in enumerate(chunk_iter):
-                audio_bytes = self._tensor_to_wav_bytes(chunk_tensor, sample_rate)
-                yield TTSChunk(audio_bytes=audio_bytes, chunk_index=i, is_final=False)
+    def unload_model(self) -> None:
+        """Unload all registered engines."""
+        for engine in self._engines.values():
+            engine.unload_model()
 
-        except RuntimeError as e:
-            if "out of memory" in str(e).lower():
-                raise TTSOutOfMemoryError("CUDA out of memory during streaming") from e
-            raise TTSGenerationError(f"Stream generation failed: {e}") from e
-        except TTSError:
-            raise
-        except Exception as e:
-            raise TTSGenerationError(f"Stream generation failed: {e}") from e
+    @property
+    def is_loaded(self) -> bool:
+        """True if any registered engine is loaded."""
+        return any(engine.is_loaded for engine in self._engines.values())
+
+    @property
+    def device(self) -> str:
+        """The device from the first registered engine, or 'cpu' if none."""
+        for engine in self._engines.values():
+            return engine.device
+        return "cpu"

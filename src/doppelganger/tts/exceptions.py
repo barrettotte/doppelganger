@@ -17,5 +17,9 @@ class TTSOutOfMemoryError(TTSError):
     """Raised when TTS generation fails due to CUDA out-of-memory."""
 
 
+class TTSEngineUnavailableError(TTSError):
+    """Raised when a TTS engine backend (e.g. vLLM) is unreachable."""
+
+
 class TTSVoiceNotFoundError(TTSError):
     """Raised when a requested voice/character is not in the registry."""

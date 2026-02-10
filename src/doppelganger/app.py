@@ -28,6 +28,8 @@ from doppelganger.db.engine import create_db_engine, dispose_db_engine
 from doppelganger.db.queries.characters import sync_voices_to_db
 from doppelganger.db.queries.tts_requests import fail_stale_requests
 from doppelganger.tts.cache import AudioCache
+from doppelganger.tts.chatterbox import ChatterboxEngine
+from doppelganger.tts.orpheus import OrpheusEngine
 from doppelganger.tts.service import TTSService
 from doppelganger.tts.voice_registry import VoiceRegistry
 
@@ -69,7 +71,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     except Exception:
         logger.warning("Could not clean up stale requests (DB may not be ready)", exc_info=True)
 
-    registry = VoiceRegistry(settings.tts.voices_dir)
+    registry = VoiceRegistry(settings.voices_dir)
     registry.scan()
     app.state.voice_registry = registry
 
@@ -83,10 +85,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     except Exception:
         logger.warning("Could not sync voices to database (DB may not be ready)", exc_info=True)
 
-    cache = AudioCache(max_size=settings.tts.cache_max_size)
+    cache = AudioCache(max_size=settings.cache_max_size)
     app.state.audio_cache = cache
 
-    tts_service = TTSService(settings.tts, registry)
+    chatterbox = ChatterboxEngine(settings.chatterbox)
+    tts_service = TTSService(registry)
+    tts_service.register_engine(chatterbox)
+
+    if settings.orpheus.enabled:
+        orpheus = OrpheusEngine(settings.orpheus)
+        tts_service.register_engine(orpheus)
+
     app.state.tts_service = tts_service
     app.state.tts_ready = False
 

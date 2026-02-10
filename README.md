@@ -8,11 +8,8 @@ Characters are registered from short reference audio clips - no fine-tuning need
 ## Quick Start
 
 ```sh
-# Install base dependencies
+# Install dependencies (includes TTS engine, requires CUDA GPU)
 uv sync
-
-# Install with TTS engine (requires CUDA GPU)
-uv sync --extra tts
 
 # Start PostgreSQL
 make docker-db

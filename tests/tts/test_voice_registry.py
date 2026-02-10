@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from doppelganger.tts.engine import EngineType
 from doppelganger.tts.voice_registry import VoiceRegistry
 
 
@@ -96,3 +97,51 @@ def test_refresh_picks_up_new_voices(tmp_path: Path) -> None:
     _make_voice(voices_dir, "gollum")
     registry.refresh()
     assert registry.size == 2
+
+
+def test_chatterbox_engine_detected(tmp_path: Path) -> None:
+    """Voice with reference.wav is detected as chatterbox engine."""
+    voices_dir = tmp_path / "voices"
+    _make_voice(voices_dir, "gandalf")
+
+    registry = VoiceRegistry(str(voices_dir))
+    registry.scan()
+
+    voice = registry.get_voice("gandalf")
+    assert voice is not None
+    assert voice.engine == EngineType.CHATTERBOX
+    assert voice.reference_audio_path.name == "reference.wav"
+
+
+def test_orpheus_engine_detected(tmp_path: Path) -> None:
+    """Voice with adapter_config.json is detected as orpheus engine."""
+    voices_dir = tmp_path / "voices"
+    char_dir = voices_dir / "sauron"
+    char_dir.mkdir(parents=True)
+    (char_dir / "adapter_config.json").write_text("{}")
+    (char_dir / "adapter_model.safetensors").write_bytes(b"\x00" * 10)
+
+    registry = VoiceRegistry(str(voices_dir))
+    registry.scan()
+
+    voice = registry.get_voice("sauron")
+    assert voice is not None
+    assert voice.engine == EngineType.ORPHEUS
+    # Path points to the directory itself for adapter-based voices
+    assert voice.reference_audio_path == char_dir
+
+
+def test_orpheus_takes_priority_over_chatterbox(tmp_path: Path) -> None:
+    """When both adapter_config.json and reference.wav exist, orpheus takes priority."""
+    voices_dir = tmp_path / "voices"
+    char_dir = voices_dir / "hybrid"
+    char_dir.mkdir(parents=True)
+    (char_dir / "reference.wav").write_bytes(b"RIFF" + b"\x00" * 100)
+    (char_dir / "adapter_config.json").write_text("{}")
+
+    registry = VoiceRegistry(str(voices_dir))
+    registry.scan()
+
+    voice = registry.get_voice("hybrid")
+    assert voice is not None
+    assert voice.engine == EngineType.ORPHEUS

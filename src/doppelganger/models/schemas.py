@@ -51,6 +51,7 @@ class CharacterResponse(BaseModel):
     name: str
     reference_audio_path: str
     created_at: datetime
+    engine: str = "chatterbox"
 
 
 def _sanitize_text(value: str) -> str:

@@ -10,6 +10,7 @@ from starlette.responses import Response, StreamingResponse
 
 from doppelganger.models.schemas import TTSGenerateRequest
 from doppelganger.tts.exceptions import (
+    TTSEngineUnavailableError,
     TTSGenerationError,
     TTSModelNotLoadedError,
     TTSOutOfMemoryError,
@@ -31,6 +32,8 @@ def _map_tts_error(e: Exception) -> HTTPException:
     if isinstance(e, TTSOutOfMemoryError):
         return HTTPException(status_code=503, detail=str(e))
     if isinstance(e, TTSModelNotLoadedError):
+        return HTTPException(status_code=503, detail=str(e))
+    if isinstance(e, TTSEngineUnavailableError):
         return HTTPException(status_code=503, detail=str(e))
     if isinstance(e, TTSGenerationError):
         return HTTPException(status_code=500, detail=str(e))

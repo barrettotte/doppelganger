@@ -23,6 +23,7 @@ class CharacterRow:
     name: str
     reference_audio_path: str
     created_at: datetime
+    engine: str = "chatterbox"
 
 
 @dataclass

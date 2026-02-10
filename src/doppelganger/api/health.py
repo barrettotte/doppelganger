@@ -1,7 +1,6 @@
 """Health check endpoint for monitoring service status."""
 
-import importlib
-
+import torch
 from fastapi import APIRouter, Request
 from sqlalchemy import text
 
@@ -12,11 +11,7 @@ router = APIRouter()
 
 def _check_gpu() -> bool:
     """Check if a CUDA GPU is available via torch."""
-    try:
-        torch = importlib.import_module("torch")
-        return bool(torch.cuda.is_available())
-    except ImportError:
-        return False
+    return bool(torch.cuda.is_available())
 
 
 @router.get("/health", response_model=HealthResponse)

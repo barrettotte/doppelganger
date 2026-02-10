@@ -14,10 +14,10 @@ dependencies = [
     "httpx>=0.28.0",
     "python-multipart>=0.0.20",
     "discord.py[voice]>=2.4.0",
+    "chatterbox-tts>=0.1.6",
+    "setuptools>=75.0.0,<81",
+    "snac>=1.2.0",
 ]
-
-[project.optional-dependencies]
-tts = ["chatterbox-tts>=0.1.6", "setuptools>=75.0.0,<81"]
 
 [dependency-groups]
 dev = [

@@ -1,18 +1,21 @@
 """Voice registry that scans the filesystem for reference audio files."""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+
+from doppelganger.tts.engine import EngineType
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
 class VoiceEntry:
-    """A registered voice with its reference audio path."""
+    """A registered voice with its reference audio path and engine type."""
 
     name: str
     reference_audio_path: Path
+    engine: EngineType = field(default=EngineType.CHATTERBOX)
 
 
 class VoiceRegistry:
@@ -37,14 +40,23 @@ class VoiceRegistry:
             if not subdir.is_dir():
                 continue
 
-            ref_audio = subdir / "reference.wav"
-            if not ref_audio.is_file():
-                logger.debug("Skipping %s: no reference.wav found", subdir.name)
-                continue
+            has_adapter = (subdir / "adapter_config.json").is_file()
+            has_reference = (subdir / "reference.wav").is_file()
 
-            name = subdir.name.lower()
-            self._voices[name] = VoiceEntry(name=name, reference_audio_path=ref_audio)
-            logger.info("Registered voice: %s", name)
+            if has_adapter:
+                # LoRA adapter directory - use Orpheus engine, path is the dir itself
+                name = subdir.name.lower()
+                self._voices[name] = VoiceEntry(name=name, reference_audio_path=subdir, engine=EngineType.ORPHEUS)
+                logger.info("Registered voice: %s (orpheus)", name)
+            elif has_reference:
+                # Reference WAV - use Chatterbox engine
+                name = subdir.name.lower()
+                self._voices[name] = VoiceEntry(
+                    name=name, reference_audio_path=subdir / "reference.wav", engine=EngineType.CHATTERBOX
+                )
+                logger.info("Registered voice: %s (chatterbox)", name)
+            else:
+                logger.debug("Skipping %s: no reference.wav or adapter_config.json found", subdir.name)
 
         logger.info("Voice registry loaded %d voice(s)", len(self._voices))
 

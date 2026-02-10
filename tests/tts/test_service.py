@@ -1,22 +1,18 @@
-"""Tests for the TTS service with mocked chatterbox."""
+"""Tests for the TTS service dispatcher."""
 
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-from doppelganger.config import TTSSettings
-from doppelganger.tts.exceptions import (
-    TTSModelNotLoadedError,
-    TTSOutOfMemoryError,
-    TTSVoiceNotFoundError,
-)
+from doppelganger.tts.engine import EngineType, TTSChunk, TTSEngine, TTSResult
+from doppelganger.tts.exceptions import TTSModelNotLoadedError, TTSVoiceNotFoundError
 from doppelganger.tts.service import TTSService
 from doppelganger.tts.voice_registry import VoiceRegistry
 
 
 def _make_voice(voices_dir: Path, name: str) -> None:
+    """Create a voice directory with a reference.wav."""
     char_dir = voices_dir / name
     char_dir.mkdir(parents=True, exist_ok=True)
     (char_dir / "reference.wav").write_bytes(b"RIFF" + b"\x00" * 100)
@@ -24,6 +20,7 @@ def _make_voice(voices_dir: Path, name: str) -> None:
 
 @pytest.fixture
 def voices_dir(tmp_path: Path) -> Path:
+    """Create a voices directory with one chatterbox voice."""
     d = tmp_path / "voices"
     _make_voice(d, "gandalf")
     return d
@@ -31,165 +28,125 @@ def voices_dir(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def registry(voices_dir: Path) -> VoiceRegistry:
+    """A voice registry scanned from tmp voices directory."""
     r = VoiceRegistry(str(voices_dir))
     r.scan()
     return r
 
 
-@pytest.fixture
-def tts_settings() -> TTSSettings:
-    return TTSSettings(device="cpu")
+def _make_mock_engine(engine_type: EngineType) -> MagicMock:
+    """Create a mock TTSEngine with the given type."""
+    engine = MagicMock(spec=TTSEngine)
+    engine.engine_type = engine_type
+    engine.is_loaded = True
+    return engine
 
 
-@pytest.fixture
-def mock_torch() -> tuple[MagicMock, MagicMock]:
-    """Create a mock torch module."""
-    torch = MagicMock()
-    tensor = MagicMock()
-    tensor.dim.return_value = 1
-    tensor.unsqueeze.return_value = tensor
-    tensor.cpu.return_value = tensor
-    tensor.shape = (1, 16000)
+def test_resolve_picks_correct_engine(registry: VoiceRegistry) -> None:
+    """_resolve returns the engine matching the voice's engine type."""
+    service = TTSService(registry)
+    engine = _make_mock_engine(EngineType.CHATTERBOX)
+    service.register_engine(engine)
 
-    torch.Tensor = MagicMock
-    tensor.__class__ = torch.Tensor
-
-    torch.cuda.is_available.return_value = False
-    return torch, tensor
+    resolved_engine, voice_path = service._resolve("gandalf")
+    assert resolved_engine is engine
+    assert "gandalf" in voice_path
 
 
-@pytest.fixture
-def mock_chatterbox(mock_torch: tuple[MagicMock, MagicMock]) -> tuple[MagicMock, MagicMock]:
-    """Create mock chatterbox module."""
-    _torch, tensor = mock_torch
-
-    model = MagicMock()
-    model.sr = 24000
-    model.generate.return_value = tensor
-    model.generate_stream.return_value = iter([tensor, tensor])
-
-    chatterbox_tts = MagicMock()
-    chatterbox_tts.ChatterboxTTS.from_pretrained.return_value = model
-
-    return chatterbox_tts, model
-
-
-def test_not_loaded_raises(tts_settings: TTSSettings, registry: VoiceRegistry) -> None:
-    """Generating without loading the model raises TTSModelNotLoadedError."""
-    service = TTSService(tts_settings, registry)
-    with pytest.raises(TTSModelNotLoadedError):
-        service.generate("gandalf", "hello")
-
-
-def test_is_loaded_property(tts_settings: TTSSettings, registry: VoiceRegistry) -> None:
-    """is_loaded is False before loading."""
-    service = TTSService(tts_settings, registry)
-    assert service.is_loaded is False
-
-
-def test_voice_not_found(
-    tts_settings: TTSSettings,
-    registry: VoiceRegistry,
-    mock_chatterbox: tuple[MagicMock, MagicMock],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Generating with unknown voice raises TTSVoiceNotFoundError."""
-    chatterbox_tts, _model = mock_chatterbox
-    monkeypatch.setitem(sys.modules, "chatterbox.tts", chatterbox_tts)
-
-    service = TTSService(tts_settings, registry)
-    service.load_model()
+def test_voice_not_found_raises(registry: VoiceRegistry) -> None:
+    """_resolve raises TTSVoiceNotFoundError for unknown characters."""
+    service = TTSService(registry)
+    engine = _make_mock_engine(EngineType.CHATTERBOX)
+    service.register_engine(engine)
 
     with pytest.raises(TTSVoiceNotFoundError):
-        service.generate("unknown-voice", "hello")
+        service._resolve("unknown-voice")
 
 
-def test_generate_returns_result(
-    tts_settings: TTSSettings,
-    registry: VoiceRegistry,
-    mock_chatterbox: tuple[MagicMock, MagicMock],
-    mock_torch: tuple[MagicMock, MagicMock],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Generate returns a TTSResult with audio bytes."""
-    chatterbox_tts, model = mock_chatterbox
-    torch, tensor = mock_torch
+def test_no_engine_for_type_raises(registry: VoiceRegistry) -> None:
+    """_resolve raises TTSModelNotLoadedError when no engine matches the voice type."""
+    service = TTSService(registry)
+    # Register an orpheus engine but gandalf is chatterbox
+    engine = _make_mock_engine(EngineType.ORPHEUS)
+    service.register_engine(engine)
 
-    monkeypatch.setitem(sys.modules, "chatterbox.tts", chatterbox_tts)
-    monkeypatch.setitem(sys.modules, "torch", torch)
+    with pytest.raises(TTSModelNotLoadedError, match="No engine registered"):
+        service._resolve("gandalf")
 
-    service = TTSService(tts_settings, registry)
-    service.load_model()
 
-    # Mock _tensor_to_wav_bytes to avoid deep torch internals
-    service._tensor_to_wav_bytes = MagicMock(return_value=b"RIFF-wav-data")
+def test_generate_delegates_to_engine(registry: VoiceRegistry) -> None:
+    """generate calls the resolved engine's generate method."""
+    service = TTSService(registry)
+    engine = _make_mock_engine(EngineType.CHATTERBOX)
+    expected = TTSResult(audio_bytes=b"wav-data", sample_rate=24000, duration_ms=500)
+    engine.generate.return_value = expected
+    service.register_engine(engine)
+
     result = service.generate("gandalf", "hello world")
+    assert result is expected
+    engine.generate.assert_called_once()
+    # Verify the voice path was passed, not the character name
+    call_args = engine.generate.call_args
+    assert "gandalf" in call_args[0][0]
+    assert call_args[0][1] == "hello world"
 
-    assert result.audio_bytes == b"RIFF-wav-data"
-    assert result.sample_rate == 24000
-    model.generate.assert_called_once()
+
+def test_generate_stream_delegates_to_engine(registry: VoiceRegistry) -> None:
+    """generate_stream calls the resolved engine's generate_stream method."""
+    service = TTSService(registry)
+    engine = _make_mock_engine(EngineType.CHATTERBOX)
+    chunks = [
+        TTSChunk(audio_bytes=b"c1", chunk_index=0, is_final=False),
+        TTSChunk(audio_bytes=b"c2", chunk_index=1, is_final=True),
+    ]
+    engine.generate_stream.return_value = iter(chunks)
+    service.register_engine(engine)
+
+    result = list(service.generate_stream("gandalf", "hello"))
+    assert len(result) == 2
+    engine.generate_stream.assert_called_once()
 
 
-def test_oom_caught(
-    tts_settings: TTSSettings,
-    registry: VoiceRegistry,
-    mock_chatterbox: tuple[MagicMock, MagicMock],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """CUDA OOM RuntimeError is caught and re-raised as TTSOutOfMemoryError."""
-    chatterbox_tts, model = mock_chatterbox
-    monkeypatch.setitem(sys.modules, "chatterbox.tts", chatterbox_tts)
+def test_load_model_calls_all_engines(registry: VoiceRegistry) -> None:
+    """load_model calls load_model on all registered engines."""
+    service = TTSService(registry)
+    e1 = _make_mock_engine(EngineType.CHATTERBOX)
+    e2 = _make_mock_engine(EngineType.ORPHEUS)
+    service.register_engine(e1)
+    service.register_engine(e2)
 
-    model.generate.side_effect = RuntimeError("CUDA out of memory")
-    service = TTSService(tts_settings, registry)
     service.load_model()
-
-    with pytest.raises(TTSOutOfMemoryError):
-        service.generate("gandalf", "hello")
-
-
-def test_stream_yields_chunks(
-    tts_settings: TTSSettings,
-    registry: VoiceRegistry,
-    mock_chatterbox: tuple[MagicMock, MagicMock],
-    mock_torch: tuple[MagicMock, MagicMock],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """generate_stream yields TTSChunk objects."""
-    chatterbox_tts, model = mock_chatterbox
-    torch, tensor = mock_torch
-
-    monkeypatch.setitem(sys.modules, "chatterbox.tts", chatterbox_tts)
-    monkeypatch.setitem(sys.modules, "torch", torch)
-
-    service = TTSService(tts_settings, registry)
-    service.load_model()
-    service._tensor_to_wav_bytes = MagicMock(return_value=b"chunk-data")
-    chunks = list(service.generate_stream("gandalf", "hello"))
-
-    assert len(chunks) == 2
-    assert chunks[0].chunk_index == 0
-    assert chunks[0].audio_bytes == b"chunk-data"
+    e1.load_model.assert_called_once()
+    e2.load_model.assert_called_once()
 
 
-def test_unload_model(
-    tts_settings: TTSSettings,
-    registry: VoiceRegistry,
-    mock_chatterbox: tuple[MagicMock, MagicMock],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Unloading the model sets is_loaded to False."""
-    chatterbox_tts, _model = mock_chatterbox
-    monkeypatch.setitem(sys.modules, "chatterbox.tts", chatterbox_tts)
-
-    service = TTSService(tts_settings, registry)
-    service.load_model()
-    assert service.is_loaded is True
-
-    # Mock torch for unload cleanup
-    torch = MagicMock()
-    torch.cuda.is_available.return_value = False
-    monkeypatch.setitem(sys.modules, "torch", torch)
+def test_unload_model_calls_all_engines(registry: VoiceRegistry) -> None:
+    """unload_model calls unload_model on all registered engines."""
+    service = TTSService(registry)
+    e1 = _make_mock_engine(EngineType.CHATTERBOX)
+    service.register_engine(e1)
 
     service.unload_model()
+    e1.unload_model.assert_called_once()
+
+
+def test_is_loaded_any(registry: VoiceRegistry) -> None:
+    """is_loaded is True if any engine is loaded."""
+    service = TTSService(registry)
     assert service.is_loaded is False
+
+    e1 = _make_mock_engine(EngineType.CHATTERBOX)
+    e1.is_loaded = True
+    service.register_engine(e1)
+    assert service.is_loaded is True
+
+
+def test_device_from_engine(registry: VoiceRegistry) -> None:
+    """device property returns the first engine's device."""
+    service = TTSService(registry)
+    assert service.device == "cpu"  # fallback with no engines
+
+    e1 = _make_mock_engine(EngineType.CHATTERBOX)
+    e1.device = "cuda"
+    service.register_engine(e1)
+    assert service.device == "cuda"

@@ -31,10 +31,15 @@ async def get_character_by_name(conn: AsyncConnection, name: str) -> CharacterRo
     return None if row is None else CharacterRow(**row)
 
 
-async def create_character(conn: AsyncConnection, name: str, reference_audio_path: str) -> CharacterRow:
+async def create_character(
+    conn: AsyncConnection, name: str, reference_audio_path: str, engine: str = "chatterbox"
+) -> CharacterRow:
     """Insert a new character and return the created row."""
-    sql = text("INSERT INTO characters (name, reference_audio_path) VALUES (:name, :reference_audio_path) RETURNING *")
-    params = {"name": name, "reference_audio_path": reference_audio_path}
+    sql = text(
+        "INSERT INTO characters (name, reference_audio_path, engine)"
+        " VALUES (:name, :reference_audio_path, :engine) RETURNING *"
+    )
+    params = {"name": name, "reference_audio_path": reference_audio_path, "engine": engine}
 
     result = await conn.execute(sql, params)
     return CharacterRow(**result.mappings().one())
@@ -68,8 +73,8 @@ async def sync_voices_to_db(conn: AsyncConnection, registry: VoiceRegistry) -> i
     created = 0
     for voice in registry.list_voices():
         if voice.name not in existing_names:
-            await create_character(conn, voice.name, str(voice.reference_audio_path))
-            logger.info("Synced filesystem voice to DB: %s", voice.name)
+            await create_character(conn, voice.name, str(voice.reference_audio_path), voice.engine.value)
+            logger.info("Synced filesystem voice to DB: %s (engine=%s)", voice.name, voice.engine.value)
             created += 1
 
     return created
