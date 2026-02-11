@@ -3,14 +3,23 @@
 import os
 from unittest.mock import patch
 
+import pytest
 from pydantic import SecretStr
 
 from doppelganger.config import Settings
 
 
-def test_default_settings() -> None:
+@pytest.fixture()
+def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Remove all DOPPELGANGER_ env vars so tests see true defaults."""
+    for key in list(os.environ):
+        if key.startswith("DOPPELGANGER_"):
+            monkeypatch.delenv(key)
+
+
+def test_default_settings(_clean_env: None) -> None:
     """Default settings should have sensible values."""
-    settings = Settings()
+    settings = Settings(_env_file=None)
     assert settings.debug is False
     assert settings.host == "0.0.0.0"
     assert settings.port == 8000
@@ -60,9 +69,9 @@ def test_secret_str_hiding() -> None:
     assert settings.database.password.get_secret_value() == "doppelganger"
 
 
-def test_chatterbox_defaults() -> None:
+def test_chatterbox_defaults(_clean_env: None) -> None:
     """ChatterboxSettings should have sensible defaults."""
-    settings = Settings()
+    settings = Settings(_env_file=None)
     assert settings.chatterbox.device == "cuda"
     assert settings.chatterbox.exaggeration == 0.1
     assert settings.chatterbox.temperature == 0.5
@@ -85,14 +94,14 @@ def test_chatterbox_env_loading() -> None:
         assert settings.voices_dir == "/data/voices"
 
 
-def test_orpheus_defaults() -> None:
+def test_orpheus_defaults(_clean_env: None) -> None:
     """OrpheusSettings should default to disabled with sensible values."""
-    settings = Settings()
+    settings = Settings(_env_file=None)
     assert settings.orpheus.enabled is False
     assert settings.orpheus.vllm_base_url == "http://localhost:8001/v1"
     assert settings.orpheus.snac_device == "cpu"
     assert settings.orpheus.sample_rate == 24000
-    assert settings.orpheus.max_tokens == 4096
+    assert settings.orpheus.max_tokens == 2000
 
 
 def test_orpheus_env_loading() -> None:

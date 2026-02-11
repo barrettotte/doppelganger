@@ -38,7 +38,15 @@ dev = [
 ]
 
 [tool.uv]
-override-dependencies = ["numpy>=1.26.0,<2.4", "ml-dtypes>=0.3.0", "pandas>=2.2.0"]
+override-dependencies = [
+    "numpy>=1.26.0,<2.4",
+    "ml-dtypes>=0.3.0",
+    "pandas>=2.2.0",
+    "transformers>=4.53.0",
+    "PyNaCl>=1.6.2",
+    "torch>=2.8.0",
+    "torchaudio>=2.8.0",
+]
 
 [build-system]
 requires = ["hatchling"]
