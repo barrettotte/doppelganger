@@ -21,6 +21,9 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
         """Return structured JSON for HTTP errors."""
+        if exc.status_code >= 500:
+            logger.error("HTTP %d on %s %s: %s", exc.status_code, request.method, request.url.path, exc.detail)
+
         return JSONResponse(
             status_code=exc.status_code,
             content={

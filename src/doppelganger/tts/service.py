@@ -40,11 +40,24 @@ class TTSService:
     def generate(self, character_name: str, text: str) -> TTSResult:
         """Generate speech by delegating to the resolved engine."""
         engine, voice_path = self._resolve(character_name)
-        return engine.generate(voice_path, text)
+        logger.info(
+            "Generating TTS: character=%s, engine=%s, text_len=%d", character_name, engine.engine_type.value, len(text)
+        )
+        result = engine.generate(voice_path, text)
+        logger.info(
+            "TTS complete: character=%s, duration_ms=%d, audio_size=%d",
+            character_name,
+            result.duration_ms,
+            len(result.audio_bytes),
+        )
+        return result
 
     def generate_stream(self, character_name: str, text: str) -> Iterator[TTSChunk]:
         """Stream speech by delegating to the resolved engine."""
         engine, voice_path = self._resolve(character_name)
+        logger.info(
+            "Streaming TTS: character=%s, engine=%s, text_len=%d", character_name, engine.engine_type.value, len(text)
+        )
         return engine.generate_stream(voice_path, text)
 
     def load_model(self) -> None:

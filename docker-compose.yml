@@ -16,6 +16,39 @@ services:
       timeout: 5s
       retries: 5
 
+  vllm:
+    image: vllm/vllm-openai:v0.6.6.post1
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./voices:/voices:ro
+      - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - CUDA_VISIBLE_DEVICES=1
+    devices:
+      - nvidia.com/gpu=all
+    command:
+      - --model=canopylabs/orpheus-tts-0.1-pretrained
+      - --port=8001
+      - --dtype=bfloat16
+      - --enable-lora
+      - --lora-modules
+      - rdr2-arthur=/voices/rdr2-arthur
+      - rdr2-dutch=/voices/rdr2-dutch
+      - --max-lora-rank=32
+      - --max-model-len=2048
+      - --gpu-memory-utilization=0.60
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/v1/models || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    profiles:
+      - orpheus
+
   api:
     build:
       context: .
@@ -29,13 +62,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    devices:
+      - nvidia.com/gpu=all
     profiles:
       - app
 

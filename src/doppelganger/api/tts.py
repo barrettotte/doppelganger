@@ -28,16 +28,22 @@ def _map_tts_error(e: Exception) -> HTTPException:
     """Map TTS exceptions to HTTP errors."""
 
     if isinstance(e, TTSVoiceNotFoundError):
+        logger.warning("Voice not found: %s", e)
         return HTTPException(status_code=404, detail=str(e))
     if isinstance(e, TTSOutOfMemoryError):
+        logger.error("TTS out of memory: %s", e)
         return HTTPException(status_code=503, detail=str(e))
     if isinstance(e, TTSModelNotLoadedError):
+        logger.error("TTS model not loaded: %s", e)
         return HTTPException(status_code=503, detail=str(e))
     if isinstance(e, TTSEngineUnavailableError):
+        logger.error("TTS engine unavailable: %s", e)
         return HTTPException(status_code=503, detail=str(e))
     if isinstance(e, TTSGenerationError):
+        logger.error("TTS generation failed: %s", e)
         return HTTPException(status_code=500, detail=str(e))
 
+    logger.exception("Unexpected TTS error: %s", e)
     return HTTPException(status_code=500, detail="Unexpected TTS error")
 
 

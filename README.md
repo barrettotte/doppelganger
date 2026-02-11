@@ -114,3 +114,28 @@ make docker-up
 # Stop all containers
 make docker-down
 ```
+
+## Fine-Tuning
+
+- Accept agreement - visit https://huggingface.co/canopylabs/orpheus-tts-0.1-pretrained and click "Agree and access repository"
+- Log in
+  - run `uv run huggingface-cli login`
+  - It'll ask for a token - grab one from https://huggingface.co/settings/tokens (needs read scope).
+
+
+```sh
+export CUDA_VISIBLE_DEVICES=0
+export CHARACTER=my_character
+
+# download training audio
+yt-dlp -x --audio-format wav --no-playlist -o "raw_audio/$CHARACTER/%(title)s.%(ext)s" "<youtube_url>"
+
+# split large file to multiple 3-13s clips
+make prepare-audio ARGS="raw_audio/$CHARACTER/ prepared/$CHARACTER/"
+
+# transcribe each clip
+make transcribe ARGS="prepared/$CHARACTER/ --model large"
+
+# fine-tune the model
+make train-lora ARGS="$CHARACTER prepared/$CHARACTER/ --device cuda --epochs 1"
+```

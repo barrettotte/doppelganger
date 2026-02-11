@@ -67,6 +67,7 @@ class VoiceManager:
         voice_client: discord.VoiceClient | None = None
         try:
             voice_client = await channel.connect()
+            logger.debug("Connected to voice channel %s in guild %s", channel.name, guild_id)
 
             if self._entrance_sound is not None:
                 entrance_source = discord.FFmpegPCMAudio(str(self._entrance_sound))
@@ -79,6 +80,10 @@ class VoiceManager:
                 after(None)
 
             self._last_play_time[guild_id] = time.monotonic()
+
+        except Exception:
+            logger.exception("Voice playback failed in guild %s, channel %s", guild_id, channel.name)
+            raise
 
         finally:
             if voice_client is not None:

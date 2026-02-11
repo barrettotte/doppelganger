@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 _CODEBOOK_OFFSETS = [0, 4096, 8192, 12288, 16384, 20480, 24576]
 _NUM_CODEBOOKS = 7
 
+# Base shift into the Orpheus tokenizer vocabulary for audio tokens.
+_AUDIO_VOCAB_OFFSET = 128266
+
 
 class SNACDecoder:
     """Decodes Orpheus-style interleaved SNAC tokens into PCM16 WAV audio."""
@@ -52,37 +55,46 @@ class SNACDecoder:
             raise TTSModelNotLoadedError("SNAC decoder is not loaded")
         return self._model
 
-    def _redistribute_codes(self, token_ids: list[int]) -> list[list[int]]:
-        """Regroup interleaved Orpheus tokens into per-codebook lists.
+    def _redistribute_codes(self, token_ids: list[int]) -> tuple[list[int], list[int], list[int]]:
+        """Regroup interleaved Orpheus tokens into SNAC's 3 codebook levels.
 
-        Orpheus outputs tokens in round-robin across 7 codebooks with vocab offsets.
-        This function strips the offsets and groups tokens by codebook index.
+        Orpheus outputs 7 tokens per frame in round-robin order. Per frame:
+          - Level 0 (coarse, 1x): position 0
+          - Level 1 (mid, 2x): positions 1, 4 (interleaved per frame)
+          - Level 2 (fine, 4x): positions 2, 3, 5, 6 (interleaved per frame)
         """
         if not token_ids:
             raise TTSGenerationError("No audio tokens to decode")
 
-        codebooks: list[list[int]] = [[] for _ in range(_NUM_CODEBOOKS)]
-        for i, token_id in enumerate(token_ids):
-            codebook_idx = i % _NUM_CODEBOOKS
-            code = token_id - _CODEBOOK_OFFSETS[codebook_idx]
-            codebooks[codebook_idx].append(code)
+        layer_0: list[int] = []
+        layer_1: list[int] = []
+        layer_2: list[int] = []
 
-        return codebooks
+        n_frames = len(token_ids) // _NUM_CODEBOOKS
+        for i in range(n_frames):
+            base = _NUM_CODEBOOKS * i
+            layer_0.append(token_ids[base] - _AUDIO_VOCAB_OFFSET)
+            layer_1.append(token_ids[base + 1] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[1])
+            layer_2.append(token_ids[base + 2] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[2])
+            layer_2.append(token_ids[base + 3] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[3])
+            layer_1.append(token_ids[base + 4] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[4])
+            layer_2.append(token_ids[base + 5] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[5])
+            layer_2.append(token_ids[base + 6] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[6])
+
+        return layer_0, layer_1, layer_2
 
     def decode(self, token_ids: list[int], sample_rate: int) -> bytes:
         """Decode Orpheus token IDs into PCM16 WAV bytes."""
         model = self._require_model()
-        codes = self._redistribute_codes(token_ids)
+        layer_0, layer_1, layer_2 = self._redistribute_codes(token_ids)
 
-        # SNAC expects 3 codebook levels: coarse (1x), mid (2x), fine (4x)
-        # Orpheus uses 7 interleaved layers that map to these 3 levels
         with torch.no_grad():
-            # Build the 3-level code tensors SNAC expects
-            codes_0 = torch.tensor(codes[0], device=self._device).unsqueeze(0)
-            codes_1 = torch.tensor(codes[1] + codes[4], device=self._device).unsqueeze(0)
-            codes_2 = torch.tensor(codes[2] + codes[3] + codes[5] + codes[6], device=self._device).unsqueeze(0)
-
-            audio = model.decode(codes_0, codes_1, codes_2)
+            codes = [
+                torch.tensor(layer_0, device=self._device).unsqueeze(0),
+                torch.tensor(layer_1, device=self._device).unsqueeze(0),
+                torch.tensor(layer_2, device=self._device).unsqueeze(0),
+            ]
+            audio = model.decode(codes)
 
         # Convert to PCM16 WAV
         audio_np = audio.squeeze().cpu().numpy()

@@ -96,11 +96,14 @@ class ChatterboxEngine(TTSEngine):
             )
         except RuntimeError as e:
             if "out of memory" in str(e).lower():
+                logger.error("CUDA OOM during Chatterbox generation for voice=%s", voice_path)
                 raise TTSOutOfMemoryError("CUDA out of memory during generation") from e
 
+            logger.exception("Chatterbox generation RuntimeError for voice=%s", voice_path)
             raise TTSGenerationError(f"Generation failed: {e}") from e
 
         except Exception as e:
+            logger.exception("Chatterbox generation failed for voice=%s", voice_path)
             raise TTSGenerationError(f"Generation failed: {e}") from e
 
         sample_rate: int = model.sr
@@ -131,11 +134,15 @@ class ChatterboxEngine(TTSEngine):
 
         except RuntimeError as e:
             if "out of memory" in str(e).lower():
+                logger.error("CUDA OOM during Chatterbox streaming for voice=%s", voice_path)
                 raise TTSOutOfMemoryError("CUDA out of memory during streaming") from e
+
+            logger.exception("Chatterbox streaming RuntimeError for voice=%s", voice_path)
             raise TTSGenerationError(f"Stream generation failed: {e}") from e
 
         except TTSError:
             raise
 
         except Exception as e:
+            logger.exception("Chatterbox streaming failed for voice=%s", voice_path)
             raise TTSGenerationError(f"Stream generation failed: {e}") from e

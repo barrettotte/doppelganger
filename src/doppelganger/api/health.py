@@ -1,11 +1,14 @@
 """Health check endpoint for monitoring service status."""
 
+import logging
+
 import torch
 from fastapi import APIRouter, Request
 from sqlalchemy import text
 
 from doppelganger.models.schemas import HealthResponse
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -27,6 +30,7 @@ async def health_check(request: Request) -> HealthResponse:
 
             db_status = "connected"
         except Exception:
+            logger.exception("Database health check failed")
             db_status = "disconnected"
 
     tts_status = "not_loaded"

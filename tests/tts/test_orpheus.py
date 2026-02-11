@@ -12,8 +12,8 @@ from doppelganger.tts.exceptions import (
     TTSModelNotLoadedError,
 )
 from doppelganger.tts.orpheus import (
-    _AUDIO_END_TOKEN,
-    _AUDIO_START_TOKEN,
+    _AUDIO_TOKEN_MIN,
+    _END_OF_AI,
     OrpheusEngine,
 )
 
@@ -79,13 +79,14 @@ def test_build_prompt(engine: OrpheusEngine) -> None:
     prompt = engine._build_prompt("hello world")
     assert "<custom_token_3>" in prompt
     assert "hello world" in prompt
-    assert "<custom_token_1>" in prompt
+    assert "<custom_token_4>" in prompt
+    assert "<custom_token_5>" in prompt
 
 
 def test_generate_success(engine: OrpheusEngine, mock_client: MagicMock) -> None:
     """Successful generation returns TTSResult with audio bytes."""
-    # Mock vLLM response with token IDs in logprobs
-    audio_tokens = [_AUDIO_START_TOKEN] + list(range(100, 114)) + [_AUDIO_END_TOKEN]
+    # Mock vLLM response with 14 audio token IDs (2 frames of 7) above _AUDIO_TOKEN_MIN
+    audio_tokens = list(range(_AUDIO_TOKEN_MIN, _AUDIO_TOKEN_MIN + 14)) + [_END_OF_AI]
     token_strings = [str(t) for t in audio_tokens]
 
     response = MagicMock()
@@ -110,11 +111,13 @@ def test_generate_success(engine: OrpheusEngine, mock_client: MagicMock) -> None
 
 def test_generate_text_fallback(engine: OrpheusEngine, mock_client: MagicMock) -> None:
     """Falls back to parsing text output when no logprobs."""
+    # 7 audio tokens (1 frame) above _AUDIO_TOKEN_MIN, followed by END_OF_AI
+    audio_tokens = list(range(_AUDIO_TOKEN_MIN, _AUDIO_TOKEN_MIN + 7))
     response = MagicMock()
     response.json.return_value = {
         "choices": [
             {
-                "text": " ".join(str(t) for t in [_AUDIO_START_TOKEN] + list(range(200, 207)) + [_AUDIO_END_TOKEN]),
+                "text": " ".join(str(t) for t in audio_tokens + [_END_OF_AI]),
             }
         ]
     }
@@ -163,11 +166,13 @@ def test_generate_no_choices_raises(engine: OrpheusEngine, mock_client: MagicMoc
         engine.generate("/voices/sauron", "hello")
 
 
-def test_filter_audio_tokens_strips_markers(engine: OrpheusEngine) -> None:
-    """_filter_audio_tokens keeps only tokens between start and end markers."""
-    tokens = [999, _AUDIO_START_TOKEN, 100, 101, 102, _AUDIO_END_TOKEN, 999]
+def test_filter_audio_tokens_keeps_valid_range(engine: OrpheusEngine) -> None:
+    """_filter_audio_tokens keeps tokens >= _AUDIO_TOKEN_MIN and truncates to multiple of 7."""
+    # 999 is below _AUDIO_TOKEN_MIN so it's dropped; 7 valid audio tokens kept
+    valid = list(range(_AUDIO_TOKEN_MIN, _AUDIO_TOKEN_MIN + 7))
+    tokens = [999, *valid, _END_OF_AI, _AUDIO_TOKEN_MIN + 100]
     result = engine._filter_audio_tokens(tokens)
-    assert result == [100, 101, 102]
+    assert result == valid
 
 
 def test_unload(engine: OrpheusEngine, mock_client: MagicMock) -> None:

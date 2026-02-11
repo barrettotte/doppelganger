@@ -19,6 +19,15 @@ dependencies = [
     "snac>=1.2.0",
 ]
 
+[project.optional-dependencies]
+train = [
+    "peft>=0.13.0,<0.16.0",
+    "accelerate>=1.0.0",
+    "datasets>=3.0.0",
+    "torchaudio>=2.4.0",
+    "openai-whisper>=20240930",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",
@@ -49,6 +58,7 @@ ignore = ["SIM108"]  # block form if/else
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "S104"]
+"scripts/**/*.py" = ["T20"]
 "src/doppelganger/config.py" = ["S104"]
 
 [tool.basedpyright]

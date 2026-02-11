@@ -135,6 +135,9 @@ def create_app() -> FastAPI:
     """Build and configure the FastAPI application."""
     settings = get_settings()
 
+    log_level = logging.DEBUG if settings.debug else logging.INFO
+    logging.basicConfig(level=log_level, format="%(levelname)s: %(name)s - %(message)s")
+
     app = FastAPI(
         title="Doppelganger",
         description="TTS voice cloning Discord bot API",

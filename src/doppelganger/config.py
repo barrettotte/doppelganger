@@ -48,10 +48,10 @@ class OrpheusSettings(BaseModel):
         default="http://localhost:8001/v1", description="Base URL for vLLM OpenAI-compatible API"
     )
     base_model: str = Field(
-        default="canopylabs/orpheus-tts-0.1-finetune-prod", description="HuggingFace model ID for the Orpheus base"
+        default="canopylabs/orpheus-tts-0.1-pretrained", description="HuggingFace model ID for the Orpheus base"
     )
     snac_device: str = Field(default="cpu", description="Device for SNAC audio decoder (cpu is usually fine)")
-    max_tokens: int = Field(default=4096, description="Max tokens per vLLM completion request")
+    max_tokens: int = Field(default=2000, description="Max tokens per vLLM completion request")
     temperature: float = Field(default=0.6, description="Sampling temperature for generation")
     top_p: float = Field(default=0.95, description="Top-p nucleus sampling threshold")
     repetition_penalty: float = Field(default=1.1, description="Repetition penalty to reduce looping")

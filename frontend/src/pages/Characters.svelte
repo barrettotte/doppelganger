@@ -96,10 +96,10 @@
 
     try {
       const formData = new FormData();
-      formData.append('name', newName);
       formData.append('audio', newFile);
 
-      const res = await fetch('/api/characters', {
+      const params = new URLSearchParams({ name: newName });
+      const res = await fetch(`/api/characters?${params}`, {
         method: 'POST',
         body: formData,
       });
@@ -158,7 +158,10 @@
       {#each characters as char}
         <div class="char-card">
           <div class="char-header">
-            <div class="char-name">{char.name}</div>
+            <div class="char-top">
+              <div class="char-name">{char.name}</div>
+              <span class="engine-badge" class:orpheus={char.engine === 'orpheus'}>{char.engine}</span>
+            </div>
             <div class="char-date">Added {formatDate(char.created_at)}</div>
           </div>
           <div class="char-actions">
@@ -305,12 +308,37 @@
     box-shadow: 0 0 0 1px var(--accent), var(--shadow);
   }
 
+  .char-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
   .char-name {
     font-weight: 600;
     font-size: 0.95em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .engine-badge {
+    font-size: 0.65em;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    background: rgba(122, 162, 247, 0.1);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .engine-badge.orpheus {
+    color: #9ece6a;
+    border-color: #9ece6a;
+    background: rgba(158, 206, 106, 0.1);
   }
 
   .char-date {

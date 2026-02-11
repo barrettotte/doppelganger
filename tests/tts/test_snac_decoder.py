@@ -75,18 +75,39 @@ def test_load_and_unload(mock_snac_modules: tuple[MagicMock, MagicMock]) -> None
     assert decoder.is_loaded is False
 
 
-def test_redistribute_codes_groups_by_codebook() -> None:
-    """_redistribute_codes splits tokens into 7 codebook groups."""
+def test_redistribute_codes_interleaves_per_frame() -> None:
+    """_redistribute_codes splits tokens into 3 SNAC levels with per-frame interleaving."""
     decoder = SNACDecoder()
-    # 14 tokens = 2 per codebook
-    tokens = list(range(14))
-    codes = decoder._redistribute_codes(tokens)
+    # 14 tokens = 2 frames of 7
+    # Use values that are offset by _AUDIO_VOCAB_OFFSET (128266) + codebook offsets
+    # so the de-offset result is predictable.
+    offset = 128266
+    tokens = [
+        # Frame 0: positions 0-6
+        offset + 10,  # pos 0: coarse, code=10
+        offset + 4096 + 20,  # pos 1: mid, code=20
+        offset + 8192 + 30,  # pos 2: fine, code=30
+        offset + 12288 + 40,  # pos 3: fine, code=40
+        offset + 16384 + 50,  # pos 4: mid, code=50
+        offset + 20480 + 60,  # pos 5: fine, code=60
+        offset + 24576 + 70,  # pos 6: fine, code=70
+        # Frame 1: positions 0-6
+        offset + 11,  # pos 0: coarse, code=11
+        offset + 4096 + 21,  # pos 1: mid, code=21
+        offset + 8192 + 31,  # pos 2: fine, code=31
+        offset + 12288 + 41,  # pos 3: fine, code=41
+        offset + 16384 + 51,  # pos 4: mid, code=51
+        offset + 20480 + 61,  # pos 5: fine, code=61
+        offset + 24576 + 71,  # pos 6: fine, code=71
+    ]
+    layer_0, layer_1, layer_2 = decoder._redistribute_codes(tokens)
 
-    assert len(codes) == 7
-    # Token 0 -> codebook 0, token 7 -> codebook 0
-    assert codes[0] == [0 - 0, 7 - 0]
-    # Token 1 -> codebook 1 (offset 4096)
-    assert codes[1] == [1 - 4096, 8 - 4096]
+    # Coarse: 1 per frame
+    assert layer_0 == [10, 11]
+    # Mid: 2 per frame, interleaved [pos1, pos4, pos1, pos4]
+    assert layer_1 == [20, 50, 21, 51]
+    # Fine: 4 per frame, interleaved [pos2, pos3, pos5, pos6, ...]
+    assert layer_2 == [30, 40, 60, 70, 31, 41, 61, 71]
 
 
 def test_redistribute_codes_empty_raises() -> None:

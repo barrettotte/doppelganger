@@ -33,19 +33,26 @@ router = APIRouter(prefix="/api/characters", tags=["characters"])
 async def list_characters(request: Request) -> CharacterListResponse:
     """List all registered characters with their IDs."""
     engine = request.app.state.db_engine
+    registry = request.app.state.voice_registry
 
     async with engine.connect() as conn:
         rows = await db_list_characters(conn)
 
-    return CharacterListResponse(
-        characters=[
+    characters = []
+    for r in rows:
+        voice = registry.get_voice(r.name)
+        engine_type = voice.engine.value if voice is not None else "chatterbox"
+        characters.append(
             CharacterResponse(
-                id=r.id, name=r.name, reference_audio_path=r.reference_audio_path, created_at=r.created_at
+                id=r.id,
+                name=r.name,
+                reference_audio_path=r.reference_audio_path,
+                created_at=r.created_at,
+                engine=engine_type,
             )
-            for r in rows
-        ],
-        count=len(rows),
-    )
+        )
+
+    return CharacterListResponse(characters=characters, count=len(characters))
 
 
 @router.post("", response_model=CharacterResponse, status_code=201)
