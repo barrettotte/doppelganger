@@ -160,12 +160,12 @@
           <div class="char-header">
             <div class="char-top">
               <div class="char-name">{char.name}</div>
-              <span class="engine-badge" class:orpheus={char.engine === 'orpheus'}>{char.engine}</span>
+              <span class="engine-badge">{char.engine}</span>
             </div>
             <div class="char-date">Added {formatDate(char.created_at)}</div>
           </div>
           <div class="char-actions">
-            <button class="btn-card" onclick={() => testVoice(char)} disabled={testingVoice === char.name}>
+            <button class="btn-card btn-card-success" onclick={() => testVoice(char)} disabled={testingVoice === char.name}>
               {testingVoice === char.name ? 'Generating...' : 'Test Voice'}
             </button>
             <button class="btn-card btn-danger" onclick={() => confirmDelete(char)}>Delete</button>
@@ -327,18 +327,12 @@
     font-size: 0.65em;
     padding: 2px 7px;
     border-radius: 9999px;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-    background: rgba(122, 162, 247, 0.1);
+    color: var(--text-secondary);
+    border: 1px solid rgba(154, 165, 206, 0.3);
+    background: rgba(154, 165, 206, 0.08);
     white-space: nowrap;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-  }
-
-  .engine-badge.orpheus {
-    color: #9ece6a;
-    border-color: #9ece6a;
-    background: rgba(158, 206, 106, 0.1);
   }
 
   .char-date {
@@ -367,50 +361,48 @@
     padding: 48px;
   }
 
-  .btn-primary {
-    padding: 6px 16px;
-    border-radius: var(--radius);
-    border: 1px solid var(--accent);
-    background: var(--accent);
-    color: var(--bg-primary);
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    background: var(--accent-hover);
-  }
-
-  .btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
   .btn-card {
     flex: 1;
     padding: 6px 0;
     font-size: 0.8em;
     border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-    transition: background 0.15s, color 0.15s;
+    border: 1px solid rgba(122, 162, 247, 0.25);
+    background: rgba(122, 162, 247, 0.06);
+    color: var(--text-primary);
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
 
   .btn-card:hover:not(:disabled) {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+    background: rgba(122, 162, 247, 0.15);
+    border-color: rgba(122, 162, 247, 0.5);
+  }
+
+  .btn-card.btn-card-success {
+    color: var(--success);
+    border-color: var(--success);
+    background: rgba(158, 206, 106, 0.06);
+  }
+
+  .btn-card.btn-card-success:hover:not(:disabled) {
+    background: rgba(158, 206, 106, 0.2);
+    border-color: var(--success);
+    color: var(--success);
+  }
+
+  .btn-card.btn-danger {
+    color: var(--error);
+    border-color: var(--error);
+    background: rgba(247, 118, 142, 0.06);
+  }
+
+  .btn-card.btn-danger:hover:not(:disabled) {
+    background: rgba(247, 118, 142, 0.2);
+    border-color: var(--error);
+    color: var(--error);
   }
 
   .btn-card:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  .btn-danger {
-    color: var(--error);
-    border-color: var(--error);
-  }
-
-  .btn-danger:hover {
-    background: rgba(247, 118, 142, 0.15);
   }
 </style>

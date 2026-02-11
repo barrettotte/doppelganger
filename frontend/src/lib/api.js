@@ -62,3 +62,9 @@ export async function getAudio(path, body) {
   const res = await request('POST', path, body);
   return res.blob();
 }
+
+// Send a GET request and return the response as a Blob for binary downloads.
+export async function getBlob(path) {
+  const res = await request('GET', path);
+  return res.blob();
+}

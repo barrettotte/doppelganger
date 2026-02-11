@@ -17,8 +17,8 @@
         <p>{message}</p>
       </div>
       <div class="actions">
-        <button class="btn-cancel" onclick={oncancel}>Cancel</button>
-        <button class="btn-confirm" onclick={onconfirm}>Confirm</button>
+        <button class="btn" onclick={oncancel}>Cancel</button>
+        <button class="btn-primary" onclick={onconfirm}>Confirm</button>
       </div>
     </div>
   </div>
@@ -59,31 +59,5 @@
     display: flex;
     gap: 8px;
     justify-content: flex-end;
-  }
-
-  button {
-    padding: 6px 16px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    font-size: 0.9em;
-  }
-
-  .btn-cancel {
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-  }
-
-  .btn-cancel:hover {
-    background: var(--bg-hover);
-  }
-
-  .btn-confirm {
-    background: var(--accent);
-    color: var(--bg-primary);
-    border-color: var(--accent);
-  }
-
-  .btn-confirm:hover {
-    background: var(--accent-hover);
   }
 </style>

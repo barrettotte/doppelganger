@@ -200,6 +200,39 @@ class BotStatusResponse(BaseModel):
     config: dict[str, str | int | bool] = Field(default_factory=dict)
 
 
+class CacheEntryResponse(BaseModel):
+    """Response model for a single cache entry."""
+
+    key: str
+    character: str
+    text: str
+    byte_size: int
+    created_at: float
+
+
+class CacheStateResponse(BaseModel):
+    """Response model for full cache state including all entries."""
+
+    enabled: bool
+    entry_count: int
+    max_size: int
+    total_bytes: int
+    entries: list[CacheEntryResponse]
+
+
+class CacheToggleRequest(BaseModel):
+    """Request model for enabling or disabling the cache."""
+
+    enabled: bool
+
+
+class CacheActionResponse(BaseModel):
+    """Response model for cache mutation actions."""
+
+    success: bool
+    message: str
+
+
 class TopUserEntry(BaseModel):
     """A user entry in the top-users metrics list."""
 

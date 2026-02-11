@@ -4,6 +4,7 @@
   const links = [
     { path: '/', label: 'Dashboard' },
     { path: '/queue', label: 'Queue' },
+    { path: '/cache', label: 'Cache' },
     { path: '/users', label: 'Users' },
     { path: '/characters', label: 'Characters' },
     { path: '/config', label: 'Config' },

@@ -18,7 +18,7 @@
 </script>
 
 <header>
-  <h1>Doppelganger</h1>
+  <a class="title" href="/" onclick={(e) => { e.preventDefault(); location.reload(); }}>Doppelganger</a>
   <div class="status">
     {#if health}
       <StatusBadge status={health.status === 'ok' ? 'ok' : 'degraded'} label={health.status} />
@@ -39,9 +39,14 @@
     padding: 0 20px;
   }
 
-  h1 {
+  .title {
     font-size: 1.1em;
     font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .title:hover {
+    color: var(--text-primary);
   }
 
   .status {

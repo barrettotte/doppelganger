@@ -23,7 +23,6 @@
   // Fetch the user info and their TTS request history.
   async function loadData() {
     try {
-      // Get user info from the users list
       const usersData = await get('/api/users');
       users = usersData.users;
       user = users.find((u) => u.id === Number(userId)) || null;
@@ -99,7 +98,7 @@
         <span>{formatDate(user.created_at)}</span>
       </div>
       <div class="info-row">
-        <button class="btn-small" class:btn-danger={!user.blacklisted} onclick={confirmToggle}>
+        <button class="btn-sm" class:btn-danger={!user.blacklisted} onclick={confirmToggle}>
           {user.blacklisted ? 'Unblacklist' : 'Blacklist'}
         </button>
       </div>
@@ -193,21 +192,4 @@
     padding: 48px;
   }
 
-  .btn-small {
-    padding: 3px 10px;
-    font-size: 0.8em;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-  }
-
-  .btn-small:hover {
-    background: var(--bg-hover);
-  }
-
-  .btn-danger {
-    color: var(--error);
-    border-color: var(--error);
-  }
 </style>

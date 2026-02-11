@@ -56,6 +56,95 @@ button {
   font-size: inherit;
 }
 
+.btn,
+.btn-sm {
+  border-radius: var(--radius);
+  border: 1px solid rgba(122, 162, 247, 0.25);
+  background: rgba(122, 162, 247, 0.06);
+  color: var(--text-primary);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn {
+  padding: 6px 16px;
+  font-size: 0.9em;
+}
+
+.btn-sm {
+  padding: 3px 10px;
+  font-size: 0.8em;
+}
+
+.btn:hover:not(:disabled),
+.btn-sm:hover:not(:disabled) {
+  background: rgba(122, 162, 247, 0.15);
+  border-color: rgba(122, 162, 247, 0.5);
+  color: var(--text-primary);
+}
+
+.btn:disabled,
+.btn-sm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  padding: 6px 16px;
+  font-size: 0.9em;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--bg-primary);
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  color: var(--error);
+  border-color: var(--error);
+  background: rgba(247, 118, 142, 0.06);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(247, 118, 142, 0.2);
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.btn-success {
+  color: var(--success);
+  border-color: var(--success);
+  background: rgba(158, 206, 106, 0.06);
+}
+
+.btn-success:hover:not(:disabled) {
+  background: rgba(158, 206, 106, 0.2);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.btn-info {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(122, 162, 247, 0.06);
+}
+
+.btn-info:hover:not(:disabled) {
+  background: rgba(122, 162, 247, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 input, select {
   font-family: inherit;
   font-size: inherit;

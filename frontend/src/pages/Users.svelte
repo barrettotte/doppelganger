@@ -10,7 +10,6 @@
 
   let users = $state([]);
   let loading = $state(true);
-  let search = $state('');
 
   let modalOpen = $state(false);
   let modalTitle = $state('');
@@ -30,15 +29,6 @@
   }
 
   onMount(loadUsers);
-
-  let filteredUsers = $derived(
-    search
-      ? users.filter((u) =>
-          u.discord_id.includes(search) ||
-          (u.username && u.username.toLowerCase().includes(search.toLowerCase()))
-        )
-      : users
-  );
 
   // Navigate to user detail on Enter or Space key press.
   function handleRowKeydown(e, user) {
@@ -66,13 +56,9 @@
 <div class="users-page">
   <h2>Users</h2>
 
-  <div class="toolbar">
-    <input type="text" placeholder="Search by name or Discord ID..." bind:value={search}/>
-  </div>
-
   {#if loading}
     <div class="center"><Spinner /></div>
-  {:else if filteredUsers.length === 0}
+  {:else if users.length === 0}
     <EmptyState message="No users found" />
   {:else}
     <table>
@@ -87,7 +73,7 @@
         </tr>
       </thead>
       <tbody>
-        {#each filteredUsers as user}
+        {#each users as user}
           <tr class="clickable" role="button" tabindex="0" onclick={() => push(`/users/${user.id}`)} onkeydown={(e) => handleRowKeydown(e, user)}>
             <td>{user.id}</td>
             <td>{user.username ?? '-'}</td>
@@ -101,7 +87,7 @@
             </td>
             <td>{formatDate(user.created_at)}</td>
             <td>
-              <button class="btn-small" class:btn-danger={!user.blacklisted} onclick={(e) => { e.stopPropagation(); confirmToggle(user); }}>
+              <button class="btn-sm" class:btn-danger={!user.blacklisted} onclick={(e) => { e.stopPropagation(); confirmToggle(user); }}>
                 {user.blacklisted ? 'Unblacklist' : 'Blacklist'}
               </button>
             </td>
@@ -125,23 +111,6 @@
     margin-bottom: 20px;
   }
 
-  .toolbar {
-    margin-bottom: 16px;
-  }
-
-  input[type="text"] {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    padding: 6px 12px;
-    border-radius: var(--radius);
-    width: 260px;
-  }
-
-  input[type="text"]::placeholder {
-    color: var(--text-muted);
-  }
-
   .center {
     display: flex;
     justify-content: center;
@@ -152,25 +121,4 @@
     cursor: pointer;
   }
 
-  .btn-small {
-    padding: 3px 10px;
-    font-size: 0.8em;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-  }
-
-  .btn-small:hover {
-    background: var(--bg-hover);
-  }
-
-  .btn-danger {
-    color: var(--error);
-    border-color: var(--error);
-  }
-
-  .btn-danger:hover {
-    background: rgba(247, 118, 142, 0.15);
-  }
 </style>

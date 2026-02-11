@@ -37,6 +37,20 @@ export function formatUptime(seconds) {
   return `${m}m`;
 }
 
+// Format a byte count to a human-readable string (B, KB, MB).
+export function formatBytes(bytes) {
+  if (bytes == null || bytes === 0) {
+    return '0 B';
+  }
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 // Truncate text to a max length with ellipsis.
 export function truncate(text, max = 50) {
   if (!text) {

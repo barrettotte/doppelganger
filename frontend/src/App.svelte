@@ -6,6 +6,7 @@
   import Users from './pages/Users.svelte';
   import UserDetail from './pages/UserDetail.svelte';
   import Characters from './pages/Characters.svelte';
+  import Cache from './pages/Cache.svelte';
   import Config from './pages/Config.svelte';
   import Metrics from './pages/Metrics.svelte';
 
@@ -15,6 +16,7 @@
     '/users': Users,
     '/users/:id': UserDetail,
     '/characters': Characters,
+    '/cache': Cache,
     '/config': Config,
     '/metrics': Metrics,
   };

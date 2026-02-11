@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import warnings
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -12,7 +11,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
+import doppelganger._warnings as _warnings  # noqa: F401
 from doppelganger.api.audit import router as audit_router
+from doppelganger.api.cache import router as cache_router
 from doppelganger.api.characters import router as characters_router
 from doppelganger.api.errors import register_error_handlers
 from doppelganger.api.health import router as health_router
@@ -27,6 +28,7 @@ from doppelganger.config import get_settings
 from doppelganger.db.engine import create_db_engine, dispose_db_engine
 from doppelganger.db.queries.characters import sync_voices_to_db
 from doppelganger.db.queries.tts_requests import fail_stale_requests
+from doppelganger.logging import setup_logging
 from doppelganger.tts.cache import AudioCache
 from doppelganger.tts.chatterbox import ChatterboxEngine
 from doppelganger.tts.orpheus import OrpheusEngine
@@ -34,23 +36,6 @@ from doppelganger.tts.service import TTSService
 from doppelganger.tts.voice_registry import VoiceRegistry
 
 logger = logging.getLogger(__name__)
-
-# suppress harmless dependency issues that I can't fix here
-
-# resemble-perth uses pkg_resources which setuptools deprecated - remove when perth updates
-warnings.filterwarnings("ignore", message="pkg_resources is deprecated", category=UserWarning)
-
-# diffusers LoRACompatibleLinear deprecation - remove when diffusers drops it
-warnings.filterwarnings("ignore", message=".*LoRACompatibleLinear.*", category=FutureWarning)
-
-# torch sdp_kernel deprecation - remove when chatterbox switches to sdpa_kernel
-warnings.filterwarnings("ignore", message=".*sdp_kernel.*", category=FutureWarning)
-
-# transformers past_key_values tuple deprecation - remove when chatterbox updates
-warnings.filterwarnings("ignore", message=".*past_key_values.*as a tuple of tuples.*", category=UserWarning)
-
-# transformers LlamaSdpaAttention fallback - remove when chatterbox updates
-logging.getLogger("transformers.models.llama.modeling_llama").setLevel(logging.ERROR)
 
 
 @asynccontextmanager
@@ -135,8 +120,7 @@ def create_app() -> FastAPI:
     """Build and configure the FastAPI application."""
     settings = get_settings()
 
-    log_level = logging.DEBUG if settings.debug else logging.INFO
-    logging.basicConfig(level=log_level, format="%(levelname)s: %(name)s - %(message)s")
+    setup_logging(debug=settings.debug)
 
     app = FastAPI(
         title="Doppelganger",
@@ -163,6 +147,7 @@ def create_app() -> FastAPI:
     app.include_router(requests_router)
     app.include_router(audit_router)
     app.include_router(status_router)
+    app.include_router(cache_router)
 
     dist_dir = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
     if dist_dir.is_dir():

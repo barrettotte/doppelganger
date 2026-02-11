@@ -165,8 +165,8 @@
                 <td>{item.character}</td>
                 <td class="text-cell">{truncate(item.text, 30)}</td>
                 <td>
-                  <button class="btn-small" onclick={() => confirmBump(item.request_id)}>Bump</button>
-                  <button class="btn-small btn-danger" onclick={() => confirmCancel(item.request_id)}>Cancel</button>
+                  <button class="btn-sm" onclick={() => confirmBump(item.request_id)}>Bump</button>
+                  <button class="btn-sm btn-danger" onclick={() => confirmCancel(item.request_id)}>Cancel</button>
                 </td>
               </tr>
             {/each}
@@ -303,25 +303,4 @@
     border-radius: var(--radius);
   }
 
-  .btn-small {
-    padding: 3px 10px;
-    font-size: 0.8em;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-  }
-
-  .btn-small:hover {
-    background: var(--bg-hover);
-  }
-
-  .btn-danger {
-    color: var(--error);
-    border-color: var(--error);
-  }
-
-  .btn-danger:hover {
-    background: rgba(247, 118, 142, 0.15);
-  }
 </style>
