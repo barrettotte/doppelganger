@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { get } from '../lib/api';
+  import { toasts } from '../lib/toast';
   import { startPolling } from '../lib/polling';
   import { formatDate, formatDuration } from '../lib/format';
   import StatusBadge from '../components/StatusBadge.svelte';
@@ -24,7 +25,7 @@
       recentRequests = r.requests;
 
     } catch (e) {
-      console.error('Dashboard refresh failed:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     } finally {
       loading = false;
     }

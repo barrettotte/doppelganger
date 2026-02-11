@@ -139,3 +139,18 @@ make transcribe ARGS="prepared/$CHARACTER/ --model large"
 # fine-tune the model
 make train-lora ARGS="$CHARACTER prepared/$CHARACTER/ --device cuda --epochs 1"
 ```
+
+## References
+
+- repos
+  - https://github.com/canopyai/Orpheus-TTS
+  - https://github.com/resemble-ai/chatterbox
+  - https://github.com/openai/whisper
+  - https://github.com/hubertsiuzdak/snac
+  - https://github.com/ytdl-org/youtube-dl
+  - https://github.com/pyannote/pyannote-audio
+- tested/unused repos
+  - https://github.com/RVC-Boss/GPT-SoVITS
+  - https://huggingface.co/coqui/XTTS-v2
+  - https://huggingface.co/SWivid/F5-TTS
+  - https://github.com/idiap/coqui-ai-TTS (maintained version)

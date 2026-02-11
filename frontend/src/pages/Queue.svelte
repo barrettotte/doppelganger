@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { get, post } from '../lib/api';
+  import { toasts } from '../lib/toast';
   import { startPolling } from '../lib/polling';
   import { fetchUserMaps } from '../lib/users';
   import { formatDate, formatDuration, truncate } from '../lib/format';
@@ -27,7 +28,7 @@
     try {
       queueState = await get('/api/queue');
     } catch (e) {
-      console.error('Queue refresh failed:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -39,7 +40,7 @@
       history = data.requests;
 
     } catch (e) {
-      console.error('History refresh failed:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     } finally {
       loading = false;
     }
@@ -53,7 +54,7 @@
       userByDiscordId = maps.byDiscordId;
 
     } catch (e) {
-      console.error('User map refresh failed:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -96,6 +97,7 @@
     modalAction = async () => {
       await post(`/api/queue/${requestId}/cancel`);
       modalOpen = false;
+      toasts.success(`Request #${requestId} cancelled`);
       await refresh();
     };
     modalOpen = true;
@@ -109,6 +111,7 @@
     modalAction = async () => {
       await post(`/api/queue/${requestId}/bump`);
       modalOpen = false;
+      toasts.success(`Request #${requestId} bumped to front`);
       await refresh();
     };
     modalOpen = true;

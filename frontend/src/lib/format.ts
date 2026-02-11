@@ -13,10 +13,13 @@ export function formatDate(isoString: string | null | undefined): string {
   });
 }
 
-// Format milliseconds to a human-readable duration.
+// Format milliseconds to a human-readable duration, showing "cached" for zero.
 export function formatDuration(ms: number | null | undefined): string {
   if (ms == null) {
     return '-';
+  }
+  if (ms === 0) {
+    return 'cached';
   }
   if (ms < 1000) {
     return `${Math.round(ms)}ms`;

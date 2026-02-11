@@ -9,14 +9,16 @@
   import Cache from './pages/Cache.svelte';
   import Config from './pages/Config.svelte';
   import Metrics from './pages/Metrics.svelte';
+  import Playground from './pages/Playground.svelte';
 
   const routes = {
     '/': Dashboard,
     '/queue': Queue,
+    '/cache': Cache,
+    '/playground': Playground,
     '/users': Users,
     '/users/:id': UserDetail,
     '/characters': Characters,
-    '/cache': Cache,
     '/config': Config,
     '/metrics': Metrics,
   };

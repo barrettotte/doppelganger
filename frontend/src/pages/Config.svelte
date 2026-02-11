@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { get } from '../lib/api';
+  import { toasts } from '../lib/toast';
   import { formatUptime } from '../lib/format';
   import StatusBadge from '../components/StatusBadge.svelte';
   import Spinner from '../components/Spinner.svelte';
@@ -17,7 +18,7 @@
       health = h;
 
     } catch (e) {
-      console.error('Failed to load config:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     } finally {
       loading = false;
     }

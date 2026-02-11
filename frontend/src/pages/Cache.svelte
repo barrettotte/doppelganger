@@ -1,5 +1,6 @@
 <script lang="ts">
   import { get, post, del, getBlob } from '../lib/api';
+  import { toasts } from '../lib/toast';
   import { formatBytes, truncate } from '../lib/format';
   import AudioPlayer from '../components/AudioPlayer.svelte';
   import EmptyState from '../components/EmptyState.svelte';
@@ -8,7 +9,6 @@
 
   let cacheState: any = $state(null);
   let loading = $state(true);
-  let error = $state('');
   let playingKey: string | null = $state(null);
   let audioUrl: string | null = $state(null);
 
@@ -21,9 +21,8 @@
   async function refresh(): Promise<void> {
     try {
       cacheState = await get('/api/cache');
-      error = '';
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     } finally {
       loading = false;
     }
@@ -35,10 +34,12 @@
       return;
     }
     try {
-      await post('/api/cache/toggle', { enabled: !cacheState.enabled });
+      const newState = !cacheState.enabled;
+      await post('/api/cache/toggle', { enabled: newState });
+      toasts.success(`Cache ${newState ? 'enabled' : 'disabled'}`);
       await refresh();
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -50,10 +51,11 @@
       try {
         await post('/api/cache/flush');
         modalOpen = false;
+        toasts.success('Cache flushed');
         await refresh();
 
       } catch (e) {
-        error = e instanceof Error ? e.message : String(e);
+        toasts.error(e instanceof Error ? e.message : String(e));
         modalOpen = false;
       }
     };
@@ -68,10 +70,11 @@
       try {
         await del(`/api/cache/${key}`);
         modalOpen = false;
+        toasts.success('Cache entry deleted');
         await refresh();
 
       } catch (e) {
-        error = e instanceof Error ? e.message : String(e);
+        toasts.error(e instanceof Error ? e.message : String(e));
         modalOpen = false;
       }
     };
@@ -96,7 +99,7 @@
       audioUrl = URL.createObjectURL(blob);
       playingKey = key;
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -113,7 +116,7 @@
 
       URL.revokeObjectURL(url);
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -149,10 +152,6 @@
       {/if}
     </div>
   </div>
-
-  {#if error}
-    <div class="error-banner">{error}</div>
-  {/if}
 
   {#if loading}
     <div class="center"><Spinner /></div>

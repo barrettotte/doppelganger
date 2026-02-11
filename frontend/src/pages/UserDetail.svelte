@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { get, post } from '../lib/api';
+  import { toasts } from '../lib/toast';
   import { formatDate, formatDuration } from '../lib/format';
   import StatusBadge from '../components/StatusBadge.svelte';
   import EmptyState from '../components/EmptyState.svelte';
@@ -33,7 +34,7 @@
       }
 
     } catch (e) {
-      console.error('Failed to load user detail:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     } finally {
       loading = false;
     }
@@ -53,6 +54,7 @@
     modalAction = async () => {
       await post(`/api/users/${user.id}/blacklist`, { blacklisted: newState });
       modalOpen = false;
+      toasts.success(`User ${newState ? 'blacklisted' : 'unblacklisted'}`);
       await loadData();
     };
     modalOpen = true;

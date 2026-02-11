@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import Header from './Header.svelte';
   import Sidebar from './Sidebar.svelte';
+  import ToastContainer from './ToastContainer.svelte';
 
   let { children }: { children: Snippet } = $props();
 </script>
@@ -15,6 +16,7 @@
     </main>
   </div>
 </div>
+<ToastContainer />
 
 <style lang="scss">
   .layout {

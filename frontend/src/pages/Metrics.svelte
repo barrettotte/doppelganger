@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { get } from '../lib/api';
+  import { toasts } from '../lib/toast';
   import { startPolling } from '../lib/polling';
   import { fetchUserMaps } from '../lib/users';
   import { formatDate, formatDuration } from '../lib/format';
@@ -30,7 +31,7 @@
       userById = maps.byId;
 
     } catch (e) {
-      console.error('Failed to load metrics:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     } finally {
       loading = false;
     }
@@ -48,7 +49,7 @@
       auditEntries = data.entries;
 
     } catch (e) {
-      console.error('Failed to load audit:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     }
   }
 

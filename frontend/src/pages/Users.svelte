@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { push } from 'svelte-spa-router';
   import { get, post } from '../lib/api';
+  import { toasts } from '../lib/toast';
   import { formatDate } from '../lib/format';
   import StatusBadge from '../components/StatusBadge.svelte';
   import EmptyState from '../components/EmptyState.svelte';
@@ -22,7 +23,7 @@
       const data = await get('/api/users');
       users = data.users;
     } catch (e) {
-      console.error('Failed to load users:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     } finally {
       loading = false;
     }
@@ -47,6 +48,7 @@
     modalAction = async () => {
       await post(`/api/users/${user.id}/blacklist`, { blacklisted: newState });
       modalOpen = false;
+      toasts.success(`User ${newState ? 'blacklisted' : 'unblacklisted'}`);
       await loadUsers();
     };
     modalOpen = true;

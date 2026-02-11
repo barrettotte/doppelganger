@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { get, del, getAudio } from '../lib/api';
+  import { toasts } from '../lib/toast';
   import { formatDate } from '../lib/format';
   import AudioPlayer from '../components/AudioPlayer.svelte';
   import EmptyState from '../components/EmptyState.svelte';
@@ -16,7 +17,6 @@
   let newName = $state('');
   let newFile: File | null = $state(null);
   let uploading = $state(false);
-  let uploadError = $state('');
 
   // Delete modal
   let modalOpen = $state(false);
@@ -28,7 +28,7 @@
       const data = await get('/api/characters');
       characters = data.characters;
     } catch (e) {
-      console.error('Failed to load characters:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     } finally {
       loading = false;
     }
@@ -50,7 +50,7 @@
       });
       audioUrl = URL.createObjectURL(blob);
     } catch (e) {
-      console.error('Voice test failed:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
       audioUrl = null;
     } finally {
       testingVoice = null;
@@ -69,12 +69,14 @@
       return;
     }
     try {
+      const name = deleteTarget.name;
       await del(`/api/characters/${deleteTarget.id}`);
       modalOpen = false;
       deleteTarget = null;
+      toasts.success(`Deleted character "${name}"`);
       await loadCharacters();
     } catch (e) {
-      console.error('Delete failed:', e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -92,7 +94,6 @@
       return;
     }
     uploading = true;
-    uploadError = '';
 
     try {
       const formData = new FormData();
@@ -109,12 +110,13 @@
         throw new Error(text);
       }
 
+      toasts.success(`Added character "${newName}"`);
       newName = '';
       newFile = null;
       await loadCharacters();
 
     } catch (e) {
-      uploadError = e instanceof Error ? e.message : String(e);
+      toasts.error(e instanceof Error ? e.message : String(e));
     } finally {
       uploading = false;
     }
@@ -144,9 +146,6 @@
         {uploading ? 'Uploading...' : 'Add Character'}
       </button>
     </div>
-    {#if uploadError}
-      <p class="error-text">{uploadError}</p>
-    {/if}
   </div>
 
   {#if loading}
@@ -273,12 +272,6 @@
 
   .form-actions {
     display: flex;
-  }
-
-  .error-text {
-    color: var(--error);
-    font-size: 0.85em;
-    margin-top: 8px;
   }
 
   .grid {
