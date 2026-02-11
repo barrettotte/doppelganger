@@ -13,6 +13,7 @@ from doppelganger.bot.checks import has_required_role, is_not_blacklisted
 from doppelganger.bot.queue import QueueFullError, QueueItem
 from doppelganger.bot.voice import VoiceManager
 from doppelganger.db.queries.audit_log import create_audit_entry
+from doppelganger.db.queries.characters import get_character_overrides
 from doppelganger.db.queries.tts_requests import (
     create_tts_request,
     mark_tts_request_completed,
@@ -78,6 +79,9 @@ class TTSCog(commands.Cog):
         async with self.bot.db_engine.begin() as conn:
             await mark_tts_request_started(conn, item.request_id)
 
+        async with self.bot.db_engine.connect() as conn:
+            overrides = await get_character_overrides(conn, item.character)
+
         cached = self.bot.audio_cache.get(item.character, item.text)
         if cached is not None:
             audio_bytes = cached
@@ -85,7 +89,9 @@ class TTSCog(commands.Cog):
         else:
             loop = asyncio.get_running_loop()
             start_time = time.monotonic()
-            result = await loop.run_in_executor(None, self.bot.tts_service.generate, item.character, item.text)
+            result = await loop.run_in_executor(
+                None, self.bot.tts_service.generate, item.character, item.text, overrides
+            )
             duration_ms = int((time.monotonic() - start_time) * 1000)
             audio_bytes = result.audio_bytes
             self.bot.audio_cache.put(item.character, item.text, audio_bytes)
@@ -104,7 +110,7 @@ class TTSCog(commands.Cog):
     @app_commands.command(name="say", description="Generate TTS audio and play it in a voice channel")
     @app_commands.describe(
         character="The character voice to use",
-        text="The text to speak (default max of 500 characters)",
+        text="The text to speak (default max of 255 characters)",
         channel="Voice channel to play in (defaults to your current channel)",
     )
     async def say(

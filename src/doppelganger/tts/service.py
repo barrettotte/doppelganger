@@ -3,12 +3,12 @@
 import logging
 from collections.abc import Iterator
 
-from doppelganger.tts.engine import EngineType, TTSChunk, TTSEngine, TTSResult
+from doppelganger.tts.engine import EngineType, TTSChunk, TTSEngine, TTSOverrides, TTSResult
 from doppelganger.tts.exceptions import TTSModelNotLoadedError, TTSVoiceNotFoundError
 from doppelganger.tts.voice_registry import VoiceRegistry
 
 # Re-export for backward compatibility (API tests, bot client import from here)
-__all__ = ["TTSChunk", "TTSResult", "TTSService"]
+__all__ = ["TTSChunk", "TTSOverrides", "TTSResult", "TTSService"]
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +37,13 @@ class TTSService:
 
         return engine, str(voice.reference_audio_path)
 
-    def generate(self, character_name: str, text: str) -> TTSResult:
+    def generate(self, character_name: str, text: str, overrides: TTSOverrides | None = None) -> TTSResult:
         """Generate speech by delegating to the resolved engine."""
         engine, voice_path = self._resolve(character_name)
         logger.info(
             "Generating TTS: character=%s, engine=%s, text_len=%d", character_name, engine.engine_type.value, len(text)
         )
-        result = engine.generate(voice_path, text)
+        result = engine.generate(voice_path, text, overrides)
         logger.info(
             "TTS complete: character=%s, duration_ms=%d, audio_size=%d",
             character_name,
@@ -52,13 +52,15 @@ class TTSService:
         )
         return result
 
-    def generate_stream(self, character_name: str, text: str) -> Iterator[TTSChunk]:
+    def generate_stream(
+        self, character_name: str, text: str, overrides: TTSOverrides | None = None
+    ) -> Iterator[TTSChunk]:
         """Stream speech by delegating to the resolved engine."""
         engine, voice_path = self._resolve(character_name)
         logger.info(
             "Streaming TTS: character=%s, engine=%s, text_len=%d", character_name, engine.engine_type.value, len(text)
         )
-        return engine.generate_stream(voice_path, text)
+        return engine.generate_stream(voice_path, text, overrides)
 
     def load_model(self) -> None:
         """Load all registered engines."""

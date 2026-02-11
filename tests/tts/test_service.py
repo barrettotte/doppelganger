@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from doppelganger.tts.engine import EngineType, TTSChunk, TTSEngine, TTSResult
+from doppelganger.tts.engine import EngineType, TTSChunk, TTSEngine, TTSOverrides, TTSResult
 from doppelganger.tts.exceptions import TTSModelNotLoadedError, TTSVoiceNotFoundError
 from doppelganger.tts.service import TTSService
 from doppelganger.tts.voice_registry import VoiceRegistry
@@ -139,6 +139,37 @@ def test_is_loaded_any(registry: VoiceRegistry) -> None:
     e1.is_loaded = True
     service.register_engine(e1)
     assert service.is_loaded is True
+
+
+def test_generate_passes_overrides(registry: VoiceRegistry) -> None:
+    """generate passes TTSOverrides through to the engine."""
+    service = TTSService(registry)
+    engine = _make_mock_engine(EngineType.CHATTERBOX)
+    expected = TTSResult(audio_bytes=b"wav-data", sample_rate=24000, duration_ms=500)
+    engine.generate.return_value = expected
+    service.register_engine(engine)
+
+    overrides = TTSOverrides(exaggeration=0.7, temperature=0.9)
+    result = service.generate("gandalf", "hello", overrides)
+    assert result is expected
+
+    call_args = engine.generate.call_args
+    assert call_args[0][2] is overrides
+
+
+def test_generate_stream_passes_overrides(registry: VoiceRegistry) -> None:
+    """generate_stream passes TTSOverrides through to the engine."""
+    service = TTSService(registry)
+    engine = _make_mock_engine(EngineType.CHATTERBOX)
+    chunks = [TTSChunk(audio_bytes=b"c1", chunk_index=0, is_final=True)]
+    engine.generate_stream.return_value = iter(chunks)
+    service.register_engine(engine)
+
+    overrides = TTSOverrides(cfg_weight=3.0)
+    list(service.generate_stream("gandalf", "hello", overrides))
+
+    call_args = engine.generate_stream.call_args
+    assert call_args[0][2] is overrides
 
 
 def test_device_from_engine(registry: VoiceRegistry) -> None:

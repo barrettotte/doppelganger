@@ -24,6 +24,12 @@ class CharacterRow:
     reference_audio_path: str
     created_at: datetime
     engine: str = "chatterbox"
+    tts_exaggeration: float | None = None
+    tts_cfg_weight: float | None = None
+    tts_temperature: float | None = None
+    tts_repetition_penalty: float | None = None
+    tts_top_p: float | None = None
+    tts_frequency_penalty: float | None = None
 
 
 @dataclass

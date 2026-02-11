@@ -7,6 +7,7 @@ import pytest
 
 from doppelganger.config import ChatterboxSettings
 from doppelganger.tts.chatterbox import ChatterboxEngine
+from doppelganger.tts.engine import TTSOverrides
 from doppelganger.tts.exceptions import (
     TTSModelNotLoadedError,
     TTSOutOfMemoryError,
@@ -162,6 +163,60 @@ def test_stream_yields_chunks(
     assert len(chunks) == 2
     assert chunks[0].chunk_index == 0
     assert chunks[0].audio_bytes == b"chunk-data"
+
+
+def test_generate_uses_overrides(
+    chatterbox_settings: ChatterboxSettings,
+    voice_path: str,
+    mock_chatterbox: tuple[MagicMock, MagicMock],
+    mock_torch: tuple[MagicMock, MagicMock],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Generate should apply per-character overrides instead of global settings."""
+    chatterbox_tts_class, model = mock_chatterbox
+    torch, _tensor = mock_torch
+
+    monkeypatch.setattr("doppelganger.tts.chatterbox.ChatterboxTTS", chatterbox_tts_class)
+    monkeypatch.setattr("doppelganger.tts.chatterbox.torch", torch)
+
+    engine = ChatterboxEngine(chatterbox_settings)
+    engine.load_model()
+    engine._tensor_to_wav_bytes = MagicMock(return_value=b"RIFF-wav-data")
+
+    overrides = TTSOverrides(exaggeration=0.8, cfg_weight=5.0, temperature=0.3)
+    engine.generate(voice_path, "hello", overrides)
+
+    call_kwargs = model.generate.call_args
+    assert call_kwargs.kwargs["exaggeration"] == 0.8
+    assert call_kwargs.kwargs["cfg_weight"] == 5.0
+    assert call_kwargs.kwargs["temperature"] == 0.3
+
+
+def test_generate_partial_overrides_uses_defaults(
+    chatterbox_settings: ChatterboxSettings,
+    voice_path: str,
+    mock_chatterbox: tuple[MagicMock, MagicMock],
+    mock_torch: tuple[MagicMock, MagicMock],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Partial overrides should fall back to settings for unset fields."""
+    chatterbox_tts_class, model = mock_chatterbox
+    torch, _tensor = mock_torch
+
+    monkeypatch.setattr("doppelganger.tts.chatterbox.ChatterboxTTS", chatterbox_tts_class)
+    monkeypatch.setattr("doppelganger.tts.chatterbox.torch", torch)
+
+    engine = ChatterboxEngine(chatterbox_settings)
+    engine.load_model()
+    engine._tensor_to_wav_bytes = MagicMock(return_value=b"RIFF-wav-data")
+
+    overrides = TTSOverrides(exaggeration=0.9)
+    engine.generate(voice_path, "hello", overrides)
+
+    call_kwargs = model.generate.call_args
+    assert call_kwargs.kwargs["exaggeration"] == 0.9
+    assert call_kwargs.kwargs["cfg_weight"] == chatterbox_settings.cfg_weight
+    assert call_kwargs.kwargs["temperature"] == chatterbox_settings.temperature
 
 
 def test_device_property(chatterbox_settings: ChatterboxSettings) -> None:

@@ -52,9 +52,11 @@ class OrpheusSettings(BaseModel):
     )
     snac_device: str = Field(default="cpu", description="Device for SNAC audio decoder (cpu is usually fine)")
     max_tokens: int = Field(default=2000, description="Max tokens per vLLM completion request")
+    max_context: int = Field(default=2048, description="Model context window size in tokens")
     temperature: float = Field(default=0.6, description="Sampling temperature for generation")
     top_p: float = Field(default=0.95, description="Top-p nucleus sampling threshold")
     repetition_penalty: float = Field(default=1.1, description="Repetition penalty to reduce looping")
+    frequency_penalty: float = Field(default=0.0, description="Penalizes tokens proportional to their frequency")
     sample_rate: int = Field(default=24000, description="Output audio sample rate in Hz")
 
 
@@ -67,7 +69,7 @@ class DiscordSettings(BaseModel):
     cooldown_seconds: int = Field(default=5, description="Per-guild cooldown between TTS plays in seconds")
     command_prefix: str = Field(default="!", description="Prefix for text-based commands (slash commands are always /)")
     entrance_sound: str = Field(default="", description="Path to a WAV file played when the bot joins a voice channel")
-    max_text_length: int = Field(default=500, description="Max characters per /say request (hallucination starts ~500)")
+    max_text_length: int = Field(default=255, description="Max characters per /say request")
     max_queue_depth: int = Field(default=20, description="Max pending requests in the TTS queue before rejecting")
     requests_per_minute: int = Field(default=3, description="Per-user rate limit for /say requests per rolling minute")
 

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { get, del, getAudio } from '../lib/api';
+  import { onMount, onDestroy } from 'svelte';
+  import { get, del, put, getAudio } from '../lib/api';
   import { toasts } from '../lib/toast';
   import { formatDate } from '../lib/format';
   import AudioPlayer from '../components/AudioPlayer.svelte';
@@ -8,9 +8,29 @@
   import Modal from '../components/Modal.svelte';
   import Spinner from '../components/Spinner.svelte';
 
+  interface Tuning {
+    exaggeration: number | null;
+    cfg_weight: number | null;
+    temperature: number | null;
+    repetition_penalty: number | null;
+    top_p: number | null;
+    frequency_penalty: number | null;
+  }
+
+  const MAX_LENGTH = 255;
+  const TEST_SENTENCES = [
+    'Which one of you fellas are going to get me a damn beer? I\'m dying of thirst over here.',
+    'Yeah can I get a 20-piece nugget, double quarter pounder, large fries, and a large coke. Give me two sweet and sour sauces. Ah screw it give me a big mac too. Put the fries in the bag!',
+    'Breaking news from the downtown zoo where officials confirmed two red pandas escaped their enclosure this morning through a gap in the fencing damaged during last night\'s windstorm.',
+  ];
+
   let characters: any[] = $state([]);
   let loading = $state(true);
-  let testingVoice: string | null = $state(null);
+
+  // Test Character
+  let selectedCharacter = $state('');
+  let inputText = $state('');
+  let generating = $state(false);
   let audioUrl: string | null = $state(null);
 
   // Add form
@@ -21,6 +41,23 @@
   // Delete modal
   let modalOpen = $state(false);
   let deleteTarget: any = $state(null);
+
+  // Tuning panel
+  let tuningOpenId: number | null = $state(null);
+  let tuningDraft: Tuning = $state({ exaggeration: null, cfg_weight: null, temperature: null, repetition_penalty: null, top_p: null, frequency_penalty: null });
+  let savingTuning = $state(false);
+
+  // Global defaults per engine (from config.py)
+  const CHATTERBOX_DEFAULTS = { exaggeration: 0.1, cfg_weight: 3.0, temperature: 0.5 };
+  const ORPHEUS_DEFAULTS = { temperature: 0.6, top_p: 0.95, repetition_penalty: 1.1, frequency_penalty: 0.0 };
+
+  // Return a display string for a tuning value, showing the default on null.
+  function tuningDisplay(value: number | null, defaultVal: number): string {
+    if (value !== null) {
+      return String(value);
+    }
+    return `default (${defaultVal})`;
+  }
 
   // Fetch the list of characters from the API.
   async function loadCharacters() {
@@ -36,25 +73,47 @@
 
   onMount(loadCharacters);
 
-  // Generate a sample TTS clip for the character and create a playable blob URL.
-  async function testVoice(character: any): Promise<void> {
-    testingVoice = character.name;
+  onDestroy(() => {
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+    }
+  });
+
+  // Generate TTS audio using the test form.
+  async function handleGenerate(): Promise<void> {
+    if (!selectedCharacter || !inputText.trim()) {
+      return;
+    }
+    generating = true;
+
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
       audioUrl = null;
     }
+
     try {
       const blob = await getAudio('/api/tts/generate', {
-        character: character.name,
-        text: 'Hello, this is a test of the voice cloning system.',
+        character: selectedCharacter,
+        text: inputText.trim(),
       });
       audioUrl = URL.createObjectURL(blob);
     } catch (e) {
       toasts.error(e instanceof Error ? e.message : String(e));
       audioUrl = null;
     } finally {
-      testingVoice = null;
+      generating = false;
     }
+  }
+
+  // Download the generated audio as a WAV file.
+  function handleDownload(): void {
+    if (!audioUrl) {
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = audioUrl;
+    a.download = `${selectedCharacter}_output.wav`;
+    a.click();
   }
 
   // Open a confirmation modal for deleting a character.
@@ -86,6 +145,67 @@
     if (files && files.length > 0) {
       newFile = files[0];
     }
+  }
+
+  // Toggle the tuning panel for a character, loading current values into the draft.
+  function toggleTuning(char: any): void {
+    if (tuningOpenId === char.id) {
+      tuningOpenId = null;
+      return;
+    }
+    tuningOpenId = char.id;
+    const t = char.tuning || {};
+    tuningDraft = {
+      exaggeration: t.exaggeration ?? null,
+      cfg_weight: t.cfg_weight ?? null,
+      temperature: t.temperature ?? null,
+      repetition_penalty: t.repetition_penalty ?? null,
+      top_p: t.top_p ?? null,
+      frequency_penalty: t.frequency_penalty ?? null,
+    };
+  }
+
+  // Save the tuning draft for the currently open character.
+  async function saveTuning(): Promise<void> {
+    if (tuningOpenId === null) {
+      return;
+    }
+    savingTuning = true;
+    try {
+      await put(`/api/characters/${tuningOpenId}/tuning`, tuningDraft);
+      toasts.success('Tuning saved');
+      await loadCharacters();
+    } catch (e) {
+      toasts.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      savingTuning = false;
+    }
+  }
+
+  // Reset all tuning values to null (use global defaults).
+  async function resetTuning(): Promise<void> {
+    if (tuningOpenId === null) {
+      return;
+    }
+    tuningDraft = { exaggeration: null, cfg_weight: null, temperature: null, repetition_penalty: null, top_p: null, frequency_penalty: null };
+    savingTuning = true;
+    try {
+      await put(`/api/characters/${tuningOpenId}/tuning`, tuningDraft);
+      toasts.success('Tuning reset to defaults');
+      await loadCharacters();
+    } catch (e) {
+      toasts.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      savingTuning = false;
+    }
+  }
+
+  // Parse a slider value, returning null for empty strings.
+  function parseSlider(value: string): number | null {
+    if (value === '') {
+      return null;
+    }
+    return parseFloat(value);
   }
 
   // Upload a new character with the given name and WAV file via FormData.
@@ -126,6 +246,55 @@
 <div class="characters-page">
   <h2>Characters</h2>
 
+  {#if !loading && characters.length > 0}
+    <div class="test-character-card">
+      <h3>Test Character</h3>
+      <div class="pg-top-row">
+        <div class="field pg-character-field">
+          <label for="pg-character">Character</label>
+          <select id="pg-character" bind:value={selectedCharacter}>
+            <option value="">Select a character</option>
+            {#each characters as char}
+              <option value={char.name}>{char.name} ({char.engine})</option>
+            {/each}
+          </select>
+        </div>
+        <div class="pg-presets">
+          {#each TEST_SENTENCES as sentence, i}
+            <button class="btn-preset" onclick={() => { inputText = sentence; }}>
+              Test {i + 1}
+            </button>
+          {/each}
+        </div>
+      </div>
+      <div class="field">
+        <label for="pg-text">
+          Text
+          <span class="char-count">{MAX_LENGTH - inputText.length} remaining</span>
+        </label>
+        <textarea id="pg-text" bind:value={inputText} maxlength={MAX_LENGTH}
+          rows="3" placeholder="Enter text to speak..."
+        ></textarea>
+      </div>
+      <div class="pg-actions">
+        <button class="btn-primary" onclick={handleGenerate}
+          disabled={generating || !selectedCharacter || !inputText.trim()}
+        >
+          {generating ? 'Generating...' : 'Generate'}
+        </button>
+      </div>
+      {#if generating}
+        <div class="center"><Spinner /></div>
+      {/if}
+      {#if audioUrl}
+        <div class="pg-result">
+          <AudioPlayer src={audioUrl} />
+          <button class="btn-download" onclick={handleDownload}>Download WAV</button>
+        </div>
+      {/if}
+    </div>
+  {/if}
+
   <div class="add-form">
     <h3>Add Character</h3>
     <div class="form-fields">
@@ -164,21 +333,63 @@
             <div class="char-date">Added {formatDate(char.created_at)}</div>
           </div>
           <div class="char-actions">
-            <button class="btn-card btn-card-success" onclick={() => testVoice(char)} disabled={testingVoice === char.name}>
-              {testingVoice === char.name ? 'Generating...' : 'Test Voice'}
+            <button class="btn-card" onclick={() => toggleTuning(char)}>
+              {tuningOpenId === char.id ? 'Close' : 'Tune'}
             </button>
             <button class="btn-card btn-danger" onclick={() => confirmDelete(char)}>Delete</button>
           </div>
+          {#if tuningOpenId === char.id}
+            {@const tempDefault = char.engine === 'orpheus' ? ORPHEUS_DEFAULTS.temperature : CHATTERBOX_DEFAULTS.temperature}
+            <div class="tuning-panel">
+              <div class="tuning-slider">
+                <label for="tune-exag-{char.id}" title="Vocal expressiveness - 0 is flat/monotone, 1 is dramatic/animated">Exaggeration <span class="tuning-val">{tuningDisplay(tuningDraft.exaggeration, CHATTERBOX_DEFAULTS.exaggeration)}</span></label>
+                <input id="tune-exag-{char.id}" type="range" min="0" max="1" step="0.05"
+                  value={tuningDraft.exaggeration ?? ''}
+                  oninput={(e: Event) => { tuningDraft.exaggeration = parseSlider((e.target as HTMLInputElement).value); }} />
+              </div>
+              <div class="tuning-slider">
+                <label for="tune-cfg-{char.id}" title="Voice cloning guidance strength - higher values stay closer to the reference voice">CFG Weight <span class="tuning-val">{tuningDisplay(tuningDraft.cfg_weight, CHATTERBOX_DEFAULTS.cfg_weight)}</span></label>
+                <input id="tune-cfg-{char.id}" type="range" min="0" max="10" step="0.1"
+                  value={tuningDraft.cfg_weight ?? ''}
+                  oninput={(e: Event) => { tuningDraft.cfg_weight = parseSlider((e.target as HTMLInputElement).value); }} />
+              </div>
+              <div class="tuning-slider">
+                <label for="tune-temp-{char.id}" title="Sampling randomness - lower is more consistent, higher adds more variation">Temperature <span class="tuning-val">{tuningDisplay(tuningDraft.temperature, tempDefault)}</span></label>
+                <input id="tune-temp-{char.id}" type="range" min="0" max="1.5" step="0.05"
+                  value={tuningDraft.temperature ?? ''}
+                  oninput={(e: Event) => { tuningDraft.temperature = parseSlider((e.target as HTMLInputElement).value); }} />
+              </div>
+              {#if char.engine === 'orpheus'}
+                <div class="tuning-slider">
+                  <label for="tune-rep-{char.id}" title="Penalizes repeated tokens to reduce audio looping - higher values discourage repetition more">Repetition Penalty <span class="tuning-val">{tuningDisplay(tuningDraft.repetition_penalty, ORPHEUS_DEFAULTS.repetition_penalty)}</span></label>
+                  <input id="tune-rep-{char.id}" type="range" min="1" max="2" step="0.05"
+                    value={tuningDraft.repetition_penalty ?? ''}
+                    oninput={(e: Event) => { tuningDraft.repetition_penalty = parseSlider((e.target as HTMLInputElement).value); }} />
+                </div>
+                <div class="tuning-slider">
+                  <label for="tune-topp-{char.id}" title="Nucleus sampling threshold - limits token choices to the most likely candidates summing to this probability">Top P <span class="tuning-val">{tuningDisplay(tuningDraft.top_p, ORPHEUS_DEFAULTS.top_p)}</span></label>
+                  <input id="tune-topp-{char.id}" type="range" min="0" max="1" step="0.05"
+                    value={tuningDraft.top_p ?? ''}
+                    oninput={(e: Event) => { tuningDraft.top_p = parseSlider((e.target as HTMLInputElement).value); }} />
+                </div>
+                <div class="tuning-slider">
+                  <label for="tune-freq-{char.id}" title="Penalizes tokens proportional to how often they have appeared - reduces repetitive audio patterns">Frequency Penalty <span class="tuning-val">{tuningDisplay(tuningDraft.frequency_penalty, ORPHEUS_DEFAULTS.frequency_penalty)}</span></label>
+                  <input id="tune-freq-{char.id}" type="range" min="0" max="2" step="0.05"
+                    value={tuningDraft.frequency_penalty ?? ''}
+                    oninput={(e: Event) => { tuningDraft.frequency_penalty = parseSlider((e.target as HTMLInputElement).value); }} />
+                </div>
+              {/if}
+              <div class="tuning-actions">
+                <button class="btn-card btn-card-success" onclick={saveTuning} disabled={savingTuning}>
+                  {savingTuning ? 'Saving...' : 'Save'}
+                </button>
+                <button class="btn-card" onclick={resetTuning} disabled={savingTuning}>Reset to Defaults</button>
+              </div>
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
-
-    {#if audioUrl}
-      <div class="audio-section">
-        <h3>Voice Preview</h3>
-        <AudioPlayer src={audioUrl} />
-      </div>
-    {/if}
   {/if}
 </div>
 
@@ -189,6 +400,116 @@
 <style lang="scss">
   .characters-page {
     max-width: 900px;
+  }
+
+  .test-character-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    h3 {
+      font-size: 0.95em;
+      margin: 0;
+    }
+  }
+
+  .pg-top-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  .pg-character-field {
+    width: 240px;
+    flex-shrink: 0;
+  }
+
+  .pg-presets {
+    display: flex;
+    gap: 6px;
+    padding-bottom: 1px;
+  }
+
+  .btn-preset {
+    padding: 8px 12px;
+    font-size: 0.85em;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+    &:hover {
+      background: var(--bg-hover);
+      border-color: var(--accent);
+      color: var(--text-primary);
+    }
+  }
+
+  .pg-actions {
+    display: flex;
+  }
+
+  .pg-result {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    :global(.player) {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  .char-count {
+    font-size: 0.9em;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  select,
+  textarea {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 0.9em;
+
+    &::placeholder {
+      color: var(--text-muted);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 50px;
+  }
+
+  .btn-download {
+    padding: 6px 16px;
+    font-size: 0.8em;
+    border-radius: var(--radius);
+    border: 1px solid rgba(122, 162, 247, 0.25);
+    background: rgba(122, 162, 247, 0.06);
+    color: var(--text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover {
+      background: rgba(122, 162, 247, 0.15);
+      border-color: rgba(122, 162, 247, 0.5);
+    }
   }
 
   .add-form {
@@ -221,6 +542,9 @@
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
     }
   }
 
@@ -333,13 +657,43 @@
     gap: 8px;
   }
 
-  .audio-section {
-    margin-top: 24px;
+  .tuning-panel {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-    h3 {
-      font-size: 0.95em;
-      margin-bottom: 8px;
+  .tuning-slider {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    label {
+      font-size: 0.75em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: flex;
+      justify-content: space-between;
     }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+  }
+
+  .tuning-val {
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tuning-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
   }
 
   .btn-card {

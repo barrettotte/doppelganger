@@ -31,6 +31,18 @@ class TTSChunk:
     is_final: bool
 
 
+@dataclass(frozen=True)
+class TTSOverrides:
+    """Per-character TTS parameter overrides, with None meaning use global default."""
+
+    exaggeration: float | None = None
+    cfg_weight: float | None = None
+    temperature: float | None = None
+    repetition_penalty: float | None = None
+    top_p: float | None = None
+    frequency_penalty: float | None = None
+
+
 class TTSEngine(ABC):
     """Base class for pluggable TTS backends."""
 
@@ -55,9 +67,9 @@ class TTSEngine(ABC):
         return "cpu"
 
     @abstractmethod
-    def generate(self, voice_path: str, text: str) -> TTSResult:
+    def generate(self, voice_path: str, text: str, overrides: TTSOverrides | None = None) -> TTSResult:
         """Generate speech audio. voice_path is a reference WAV or adapter directory."""
 
-    def generate_stream(self, voice_path: str, text: str) -> Iterator[TTSChunk]:
+    def generate_stream(self, voice_path: str, text: str, overrides: TTSOverrides | None = None) -> Iterator[TTSChunk]:
         """Stream speech audio in chunks. Override in engines that support streaming."""
         raise NotImplementedError(f"{type(self).__name__} does not support streaming")

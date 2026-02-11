@@ -46,6 +46,12 @@ export async function post(path: string, body?: unknown): Promise<any> {
   return res.json();
 }
 
+// Send a PUT request with a JSON body and return the parsed response.
+export async function put(path: string, body?: unknown): Promise<any> {
+  const res = await request('PUT', path, body);
+  return res.json();
+}
+
 // Send a DELETE request and return the parsed JSON response.
 export async function del(path: string): Promise<any> {
   const res = await request('DELETE', path);

@@ -10,7 +10,7 @@ import torch
 from chatterbox.tts import ChatterboxTTS
 
 from doppelganger.config import ChatterboxSettings
-from doppelganger.tts.engine import EngineType, TTSChunk, TTSEngine, TTSResult
+from doppelganger.tts.engine import EngineType, TTSChunk, TTSEngine, TTSOverrides, TTSResult
 from doppelganger.tts.exceptions import (
     TTSError,
     TTSGenerationError,
@@ -82,17 +82,26 @@ class ChatterboxEngine(TTSEngine):
 
         return buf.getvalue()
 
-    def generate(self, voice_path: str, text: str) -> TTSResult:
+    def generate(self, voice_path: str, text: str, overrides: TTSOverrides | None = None) -> TTSResult:
         """Generate speech using Chatterbox with the given reference WAV path."""
         model = self._require_model()
+        exaggeration = (
+            overrides.exaggeration if overrides and overrides.exaggeration is not None else self._settings.exaggeration
+        )
+        cfg_weight = (
+            overrides.cfg_weight if overrides and overrides.cfg_weight is not None else self._settings.cfg_weight
+        )
+        temperature = (
+            overrides.temperature if overrides and overrides.temperature is not None else self._settings.temperature
+        )
 
         try:
             wav = model.generate(
                 text,
                 audio_prompt_path=voice_path,
-                exaggeration=self._settings.exaggeration,
-                cfg_weight=self._settings.cfg_weight,
-                temperature=self._settings.temperature,
+                exaggeration=exaggeration,
+                cfg_weight=cfg_weight,
+                temperature=temperature,
             )
         except RuntimeError as e:
             if "out of memory" in str(e).lower():
@@ -114,18 +123,27 @@ class ChatterboxEngine(TTSEngine):
 
         return TTSResult(audio_bytes=audio_bytes, sample_rate=sample_rate, duration_ms=duration_ms)
 
-    def generate_stream(self, voice_path: str, text: str) -> Iterator[TTSChunk]:
+    def generate_stream(self, voice_path: str, text: str, overrides: TTSOverrides | None = None) -> Iterator[TTSChunk]:
         """Stream TTS audio in chunks using Chatterbox's streaming API."""
         model = self._require_model()
+        exaggeration = (
+            overrides.exaggeration if overrides and overrides.exaggeration is not None else self._settings.exaggeration
+        )
+        cfg_weight = (
+            overrides.cfg_weight if overrides and overrides.cfg_weight is not None else self._settings.cfg_weight
+        )
+        temperature = (
+            overrides.temperature if overrides and overrides.temperature is not None else self._settings.temperature
+        )
 
         try:
             sample_rate: int = model.sr
             chunk_iter = model.generate_stream(
                 text,
                 audio_prompt_path=voice_path,
-                exaggeration=self._settings.exaggeration,
-                cfg_weight=self._settings.cfg_weight,
-                temperature=self._settings.temperature,
+                exaggeration=exaggeration,
+                cfg_weight=cfg_weight,
+                temperature=temperature,
             )
 
             for i, chunk_tensor in enumerate(chunk_iter):

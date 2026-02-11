@@ -34,14 +34,36 @@ def _make_db_engine(user_row: dict[str, object] | None = None, *, blacklisted: b
         "created_at": _NOW,
     }
 
-    # For is_not_blacklisted (uses engine.connect)
+    # Default character dict for get_character_overrides queries
+    default_character: dict[str, object] = {
+        "id": 1,
+        "name": "test",
+        "reference_audio_path": "/voices/test/reference.wav",
+        "created_at": _NOW,
+        "engine": "chatterbox",
+        "tts_exaggeration": None,
+        "tts_cfg_weight": None,
+        "tts_temperature": None,
+        "tts_repetition_penalty": None,
+        "tts_top_p": None,
+        "tts_frequency_penalty": None,
+    }
+
+    # For is_not_blacklisted and get_character_overrides (uses engine.connect)
     connect_conn = AsyncMock()
     if user_row is not None:
         connect_row: dict[str, object] | None = {**default_user, **user_row}
     else:
         connect_row = None
 
-    connect_conn.execute.return_value = _make_execute_result(connect_row)
+    def connect_dispatch(*args: object, **kwargs: object) -> MagicMock:
+        """Dispatch connect queries to user or character results based on SQL."""
+        sql_str = str(args[0]) if args else ""
+        if "characters" in sql_str:
+            return _make_execute_result(default_character)
+        return _make_execute_result(connect_row)
+
+    connect_conn.execute = AsyncMock(side_effect=connect_dispatch)
 
     connect_ctx = AsyncMock()
     connect_ctx.__aenter__.return_value = connect_conn
@@ -285,7 +307,11 @@ class TestProcessItem:
             await cog._process_item(item)
 
         mock_play.assert_awaited_once()
-        bot.tts_service.generate.assert_called_once_with("gandalf", "Hello world")
+        # generate is now called with three args: character, text, overrides
+        call_args = bot.tts_service.generate.call_args
+        assert call_args[0][0] == "gandalf"
+        assert call_args[0][1] == "Hello world"
+        assert len(call_args[0]) == 3
 
     async def test_process_item_uses_cache(self, cog: TTSCog, bot: MagicMock) -> None:
         """Cached audio should skip generation."""

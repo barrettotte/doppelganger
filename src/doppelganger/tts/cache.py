@@ -106,6 +106,13 @@ class AudioCache:
             return True
         return False
 
+    def remove_by_character(self, character: str) -> int:
+        """Remove all entries for a character. Returns the number of entries removed."""
+        keys = [k for k, v in self._cache.items() if v.character == character]
+        for k in keys:
+            del self._cache[k]
+        return len(keys)
+
     def list_entries(self) -> list[CacheEntry]:
         """Return all entries newest-first."""
         return list(reversed(self._cache.values()))

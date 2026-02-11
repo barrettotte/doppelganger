@@ -18,6 +18,48 @@ from doppelganger.tts.cache import AudioCache
 from doppelganger.tts.voice_registry import VoiceRegistry
 
 
+def mock_db_connect_list(rows: list[dict[str, object]]) -> MagicMock:
+    """Create a mock DB engine whose connect().execute().mappings().all() returns the given rows."""
+    engine = MagicMock()
+    conn = AsyncMock()
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.all.return_value = rows
+    conn.execute = AsyncMock(return_value=execute_result)
+
+    ctx = AsyncMock()
+    ctx.__aenter__.return_value = conn
+    engine.connect.return_value = ctx
+    return engine
+
+
+def mock_db_connect_single(row: dict[str, object] | None) -> MagicMock:
+    """Create a mock DB engine whose connect().execute().mappings().first() returns a single row."""
+    engine = MagicMock()
+    conn = AsyncMock()
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.first.return_value = row
+    conn.execute = AsyncMock(return_value=execute_result)
+
+    ctx = AsyncMock()
+    ctx.__aenter__.return_value = conn
+    engine.connect.return_value = ctx
+    return engine
+
+
+def mock_db_begin_single(row: dict[str, object] | None) -> MagicMock:
+    """Create a mock DB engine whose begin().execute().mappings().first() returns a single row."""
+    engine = MagicMock()
+    conn = AsyncMock()
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.first.return_value = row
+    conn.execute = AsyncMock(return_value=execute_result)
+
+    ctx = AsyncMock()
+    ctx.__aenter__.return_value = conn
+    engine.begin.return_value = ctx
+    return engine
+
+
 @pytest.fixture
 def settings() -> Settings:
     """Return default test settings."""
@@ -26,11 +68,17 @@ def settings() -> Settings:
 
 @pytest.fixture
 def mock_db_engine() -> MagicMock:
-    """Return a mocked async database engine."""
+    """Return a mocked async database engine with async context manager support."""
     engine = MagicMock()
     conn = AsyncMock()
-    conn.execute = AsyncMock(return_value=MagicMock())
-    engine.connect = MagicMock(return_value=conn)
+    # execute returns a sync MagicMock so .mappings().first() works without await
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.first.return_value = None
+    conn.execute = AsyncMock(return_value=execute_result)
+
+    ctx = AsyncMock()
+    ctx.__aenter__.return_value = conn
+    engine.connect.return_value = ctx
     return engine
 
 

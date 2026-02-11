@@ -62,7 +62,18 @@ class TTSGenerateRequest(_SanitizedTextMixin):
     """Request model for TTS generation."""
 
     character: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
-    text: str = Field(min_length=1, max_length=500)
+    text: str = Field(min_length=1, max_length=255)
+
+
+class CharacterTuning(BaseModel):
+    """Per-character TTS tuning overrides (null means use global default)."""
+
+    exaggeration: float | None = None
+    cfg_weight: float | None = None
+    temperature: float | None = None
+    repetition_penalty: float | None = None
+    top_p: float | None = None
+    frequency_penalty: float | None = None
 
 
 class CharacterResponse(BaseModel):
@@ -73,6 +84,7 @@ class CharacterResponse(BaseModel):
     reference_audio_path: str
     created_at: datetime
     engine: str = "chatterbox"
+    tuning: CharacterTuning = Field(default_factory=CharacterTuning)
 
 
 class CharacterListResponse(BaseModel):

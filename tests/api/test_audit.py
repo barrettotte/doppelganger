@@ -2,32 +2,20 @@
 
 import json
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from httpx import AsyncClient
 
+from tests.conftest import mock_db_connect_list
+
 _NOW = datetime(2026, 1, 1)
-
-
-def _mock_db_for_list(rows: list[dict[str, object]]) -> MagicMock:
-    """Create a mock DB engine whose connect().execute().mappings().all() returns the given rows."""
-    engine = MagicMock()
-    conn = AsyncMock()
-    execute_result = MagicMock()
-    execute_result.mappings.return_value.all.return_value = rows
-    conn.execute = AsyncMock(return_value=execute_result)
-
-    ctx = AsyncMock()
-    ctx.__aenter__.return_value = conn
-    engine.connect.return_value = ctx
-    return engine
 
 
 @pytest.mark.asyncio
 async def test_list_audit_empty(app: MagicMock, client: AsyncClient) -> None:
     """GET /api/audit returns empty list when no entries exist."""
-    app.state.db_engine = _mock_db_for_list([])
+    app.state.db_engine = mock_db_connect_list([])
 
     response = await client.get("/api/audit")
     assert response.status_code == 200
@@ -40,7 +28,7 @@ async def test_list_audit_empty(app: MagicMock, client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_list_audit_populated(app: MagicMock, client: AsyncClient) -> None:
     """GET /api/audit returns audit entries with parsed JSON details."""
-    app.state.db_engine = _mock_db_for_list(
+    app.state.db_engine = mock_db_connect_list(
         [
             {
                 "id": 1,
@@ -70,7 +58,7 @@ async def test_list_audit_populated(app: MagicMock, client: AsyncClient) -> None
 @pytest.mark.asyncio
 async def test_list_audit_with_action_filter(app: MagicMock, client: AsyncClient) -> None:
     """GET /api/audit?action=tts_generate passes filter to the query."""
-    app.state.db_engine = _mock_db_for_list(
+    app.state.db_engine = mock_db_connect_list(
         [
             {
                 "id": 1,
@@ -90,7 +78,7 @@ async def test_list_audit_with_action_filter(app: MagicMock, client: AsyncClient
 @pytest.mark.asyncio
 async def test_list_audit_with_limit(app: MagicMock, client: AsyncClient) -> None:
     """GET /api/audit?limit=10 passes limit to the query."""
-    app.state.db_engine = _mock_db_for_list([])
+    app.state.db_engine = mock_db_connect_list([])
 
     response = await client.get("/api/audit?limit=10")
     assert response.status_code == 200

@@ -5,7 +5,6 @@
     { path: '/', label: 'Dashboard' },
     { path: '/queue', label: 'Queue' },
     { path: '/cache', label: 'Cache' },
-    { path: '/playground', label: 'Playground' },
     { path: '/characters', label: 'Characters' },
     { path: '/users', label: 'Users' },
     { path: '/config', label: 'Config' },

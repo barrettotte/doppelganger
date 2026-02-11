@@ -6,6 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from httpx import AsyncClient
 
+from tests.conftest import mock_db_connect_single
+
 _NOW = datetime(2026, 1, 1)
 
 
@@ -86,16 +88,7 @@ async def test_list_requests_with_limit(app: MagicMock, client: AsyncClient) -> 
 @pytest.mark.asyncio
 async def test_get_single_request(app: MagicMock, client: AsyncClient) -> None:
     """GET /api/requests/{id} returns a single request."""
-    engine = MagicMock()
-    conn = AsyncMock()
-    execute_result = MagicMock()
-    execute_result.mappings.return_value.first.return_value = _make_request_row(42)
-    conn.execute = AsyncMock(return_value=execute_result)
-
-    ctx = AsyncMock()
-    ctx.__aenter__.return_value = conn
-    engine.connect.return_value = ctx
-    app.state.db_engine = engine
+    app.state.db_engine = mock_db_connect_single(_make_request_row(42))
 
     response = await client.get("/api/requests/42")
     assert response.status_code == 200
@@ -105,16 +98,7 @@ async def test_get_single_request(app: MagicMock, client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_get_single_request_not_found(app: MagicMock, client: AsyncClient) -> None:
     """GET /api/requests/{id} returns 404 for unknown request."""
-    engine = MagicMock()
-    conn = AsyncMock()
-    execute_result = MagicMock()
-    execute_result.mappings.return_value.first.return_value = None
-    conn.execute = AsyncMock(return_value=execute_result)
-
-    ctx = AsyncMock()
-    ctx.__aenter__.return_value = conn
-    engine.connect.return_value = ctx
-    app.state.db_engine = engine
+    app.state.db_engine = mock_db_connect_single(None)
 
     response = await client.get("/api/requests/999")
     assert response.status_code == 404

@@ -203,3 +203,27 @@ def test_get_entry_nonexistent() -> None:
     """Get entry returns None for missing key."""
     cache = AudioCache(max_size=10)
     assert cache.get_entry("nonexistent") is None
+
+
+def test_remove_by_character() -> None:
+    """Remove by character evicts all entries for that character only."""
+    cache = AudioCache(max_size=10)
+    cache.put("gandalf", "hello", b"g1")
+    cache.put("gandalf", "world", b"g2")
+    cache.put("gollum", "precious", b"p1")
+
+    removed = cache.remove_by_character("gandalf")
+    assert removed == 2
+    assert cache.size == 1
+    assert cache.get("gandalf", "hello") is None
+    assert cache.get("gollum", "precious") == b"p1"
+
+
+def test_remove_by_character_none() -> None:
+    """Remove by character returns 0 when no entries match."""
+    cache = AudioCache(max_size=10)
+    cache.put("gandalf", "hello", b"g1")
+
+    removed = cache.remove_by_character("gollum")
+    assert removed == 0
+    assert cache.size == 1

@@ -3,6 +3,7 @@
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     discord_id VARCHAR(20) NOT NULL UNIQUE,
+    username VARCHAR(100),
     blacklisted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -12,6 +13,13 @@ CREATE TABLE characters (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     reference_audio_path VARCHAR(500) NOT NULL,
+    engine VARCHAR(20) NOT NULL DEFAULT 'chatterbox',
+    tts_exaggeration REAL,
+    tts_cfg_weight REAL,
+    tts_temperature REAL,
+    tts_repetition_penalty REAL,
+    tts_top_p REAL,
+    tts_frequency_penalty REAL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -19,7 +27,7 @@ CREATE TABLE tts_requests (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users (id),
     character VARCHAR(100) NOT NULL,
-    text VARCHAR(3000) NOT NULL, -- 2000+ is where it start hallucinating
+    text VARCHAR(3000) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     started_at TIMESTAMPTZ,

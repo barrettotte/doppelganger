@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 
 from doppelganger.config import OrpheusSettings
-from doppelganger.tts.engine import EngineType, TTSEngine, TTSResult
+from doppelganger.tts.engine import EngineType, TTSEngine, TTSOverrides, TTSResult
 from doppelganger.tts.exceptions import (
     TTSEngineUnavailableError,
     TTSGenerationError,
@@ -139,7 +139,7 @@ class OrpheusEngine(TTSEngine):
 
         return audio_tokens
 
-    def generate(self, voice_path: str, text: str) -> TTSResult:
+    def generate(self, voice_path: str, text: str, overrides: TTSOverrides | None = None) -> TTSResult:
         """Generate speech via vLLM and decode with SNAC."""
         self._require_loaded()
         client = self._client
@@ -148,14 +148,33 @@ class OrpheusEngine(TTSEngine):
 
         lora_name = self._resolve_lora_name(voice_path)
         prompt = self._build_prompt(text)
+        temperature = (
+            overrides.temperature if overrides and overrides.temperature is not None else self._settings.temperature
+        )
+        top_p = overrides.top_p if overrides and overrides.top_p is not None else self._settings.top_p
+        repetition_penalty = (
+            overrides.repetition_penalty
+            if overrides and overrides.repetition_penalty is not None
+            else self._settings.repetition_penalty
+        )
+        frequency_penalty = (
+            overrides.frequency_penalty
+            if overrides and overrides.frequency_penalty is not None
+            else self._settings.frequency_penalty
+        )
+
+        # Estimate prompt tokens (~3 chars per token) and cap to stay within context window.
+        prompt_token_estimate = len(prompt) // 3 + 5
+        max_tokens = min(self._settings.max_tokens, self._settings.max_context - prompt_token_estimate)
 
         payload = {
             "model": lora_name,
             "prompt": prompt,
-            "max_tokens": self._settings.max_tokens,
-            "temperature": self._settings.temperature,
-            "top_p": self._settings.top_p,
-            "repetition_penalty": self._settings.repetition_penalty,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "top_p": top_p,
+            "repetition_penalty": repetition_penalty,
+            "frequency_penalty": frequency_penalty,
             "logprobs": 1,
         }
 

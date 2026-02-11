@@ -8,6 +8,7 @@ from functools import partial
 from fastapi import APIRouter, HTTPException, Request
 from starlette.responses import Response, StreamingResponse
 
+from doppelganger.db.queries.characters import get_character_overrides
 from doppelganger.models.tts import TTSGenerateRequest
 from doppelganger.tts.exceptions import (
     TTSEngineUnavailableError,
@@ -52,18 +53,22 @@ async def generate_speech(request: Request, body: TTSGenerateRequest) -> Respons
     """Generate speech audio for the given text and character voice."""
     tts_service = request.app.state.tts_service
     cache = request.app.state.audio_cache
+    db_engine = request.app.state.db_engine
 
     cached = cache.get(body.character, body.text)
     if cached is not None:
         logger.debug("Cache hit for %s: %s", body.character, body.text[:30])
         return Response(content=cached, media_type="audio/wav", headers=_WAV_HEADERS)
 
+    async with db_engine.connect() as conn:
+        overrides = await get_character_overrides(conn, body.character)
+
     loop = asyncio.get_running_loop()
     async with _generation_lock:
         try:
             result = await loop.run_in_executor(
                 executor=None,
-                func=partial(tts_service.generate, body.character, body.text),
+                func=partial(tts_service.generate, body.character, body.text, overrides),
             )
         except Exception as e:
             raise _map_tts_error(e) from e
@@ -76,7 +81,11 @@ async def generate_speech(request: Request, body: TTSGenerateRequest) -> Respons
 async def stream_speech(request: Request, body: TTSGenerateRequest) -> StreamingResponse:
     """Stream speech audio chunks for the given text and character voice."""
     tts_service = request.app.state.tts_service
+    db_engine = request.app.state.db_engine
     queue: asyncio.Queue[bytes | None] = asyncio.Queue()
+
+    async with db_engine.connect() as conn:
+        overrides = await get_character_overrides(conn, body.character)
 
     # Producer-consumer pattern: _producer generates audio chunks in a thread
     # pool and pushes them into an asyncio.Queue; _stream yields from the
@@ -86,7 +95,7 @@ async def stream_speech(request: Request, body: TTSGenerateRequest) -> Streaming
         try:
             chunks = await loop.run_in_executor(
                 executor=None,
-                func=partial(list, tts_service.generate_stream(body.character, body.text)),
+                func=partial(list, tts_service.generate_stream(body.character, body.text, overrides)),
             )
             for chunk in chunks:
                 await queue.put(chunk.audio_bytes)
