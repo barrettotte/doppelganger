@@ -46,7 +46,7 @@ override-dependencies = [
     "PyNaCl>=1.6.2",
     "torch>=2.8.0",
     "torchaudio>=2.8.0",
-    "pillow>=11.2.1",
+    "pillow>=12.1.1",
 ]
 
 [build-system]
