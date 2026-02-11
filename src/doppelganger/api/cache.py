@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 
-from doppelganger.models.schemas import (
+from doppelganger.models.cache import (
     CacheActionResponse,
     CacheEntryResponse,
     CacheStateResponse,

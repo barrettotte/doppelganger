@@ -6,7 +6,7 @@ import torch
 from fastapi import APIRouter, Request
 from sqlalchemy import text
 
-from doppelganger.models.schemas import HealthResponse
+from doppelganger.models.common import HealthResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

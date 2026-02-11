@@ -6,7 +6,7 @@ from dataclasses import asdict
 from fastapi import APIRouter, Request
 
 from doppelganger.db.queries.tts_requests import update_tts_request_status
-from doppelganger.models.schemas import QueueActionResponse, QueueStateResponse
+from doppelganger.models.queue import QueueActionResponse, QueueStateResponse
 
 logger = logging.getLogger(__name__)
 

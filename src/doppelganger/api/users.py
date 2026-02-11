@@ -7,10 +7,9 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from doppelganger.db.queries.tts_requests import list_tts_requests_by_user
 from doppelganger.db.queries.users import get_user, list_users, set_user_blacklisted
-from doppelganger.models.schemas import (
+from doppelganger.models.tts import TTSRequestListResponse, TTSRequestResponse
+from doppelganger.models.users import (
     BlacklistRequest,
-    TTSRequestListResponse,
-    TTSRequestResponse,
     UserListResponse,
     UserResponse,
 )

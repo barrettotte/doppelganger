@@ -6,7 +6,7 @@ import time
 from fastapi import APIRouter, Request
 
 from doppelganger.db.queries.tts_requests import get_request_metrics
-from doppelganger.models.schemas import (
+from doppelganger.models.status import (
     BotStatusResponse,
     GuildInfo,
     MetricsResponse,

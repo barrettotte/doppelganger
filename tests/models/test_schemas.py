@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from doppelganger.models.schemas import TTSGenerateRequest, TTSRequestCreate
+from doppelganger.models.tts import TTSGenerateRequest, TTSRequestCreate
 
 
 def test_strips_null_bytes() -> None:

@@ -8,7 +8,7 @@ from functools import partial
 from fastapi import APIRouter, HTTPException, Request
 from starlette.responses import Response, StreamingResponse
 
-from doppelganger.models.schemas import TTSGenerateRequest
+from doppelganger.models.tts import TTSGenerateRequest
 from doppelganger.tts.exceptions import (
     TTSEngineUnavailableError,
     TTSGenerationError,

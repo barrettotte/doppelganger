@@ -7,7 +7,7 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel, SecretStr
 
 from doppelganger.config import get_settings
-from doppelganger.models.schemas import ConfigEntry, ConfigSection, FullConfigResponse
+from doppelganger.models.config import ConfigEntry, ConfigSection, FullConfigResponse
 
 logger = logging.getLogger(__name__)
 

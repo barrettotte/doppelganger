@@ -19,7 +19,7 @@ from doppelganger.db.queries.characters import (
 from doppelganger.db.queries.characters import (
     list_characters as db_list_characters,
 )
-from doppelganger.models.schemas import (
+from doppelganger.models.tts import (
     CharacterListResponse,
     CharacterResponse,
 )

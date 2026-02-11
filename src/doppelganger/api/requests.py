@@ -10,7 +10,7 @@ from doppelganger.db.queries.tts_requests import (
     get_tts_request,
     list_tts_requests,
 )
-from doppelganger.models.schemas import TTSRequestListResponse, TTSRequestResponse
+from doppelganger.models.tts import TTSRequestListResponse, TTSRequestResponse
 
 logger = logging.getLogger(__name__)
 

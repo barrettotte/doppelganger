@@ -7,7 +7,7 @@ from dataclasses import asdict
 from fastapi import APIRouter, Query, Request
 
 from doppelganger.db.queries.audit_log import list_audit_entries
-from doppelganger.models.schemas import AuditLogListResponse, AuditLogResponse
+from doppelganger.models.audit import AuditLogListResponse, AuditLogResponse
 
 logger = logging.getLogger(__name__)
 
