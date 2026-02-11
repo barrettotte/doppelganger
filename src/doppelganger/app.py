@@ -15,6 +15,7 @@ import doppelganger._warnings as _warnings  # noqa: F401
 from doppelganger.api.audit import router as audit_router
 from doppelganger.api.cache import router as cache_router
 from doppelganger.api.characters import router as characters_router
+from doppelganger.api.config import router as config_router
 from doppelganger.api.errors import register_error_handlers
 from doppelganger.api.health import router as health_router
 from doppelganger.api.middleware import RequestIDMiddleware
@@ -148,6 +149,7 @@ def create_app() -> FastAPI:
     app.include_router(audit_router)
     app.include_router(status_router)
     app.include_router(cache_router)
+    app.include_router(config_router)
 
     dist_dir = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
     if dist_dir.is_dir():

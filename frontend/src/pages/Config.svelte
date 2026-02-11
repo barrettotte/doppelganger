@@ -6,22 +6,52 @@
   import StatusBadge from '../components/StatusBadge.svelte';
   import Spinner from '../components/Spinner.svelte';
 
+  interface ConfigEntry {
+    key: string;
+    value: string;
+  }
+
+  interface ConfigSection {
+    name: string;
+    entries: ConfigEntry[];
+  }
+
+  interface ConfigData {
+    sections: ConfigSection[];
+  }
+
   let status: any = $state(null);
   let health: any = $state(null);
+  let config: ConfigData | null = $state(null);
   let loading = $state(true);
 
-  // Fetch bot status and system health data in parallel.
+  // Fetch bot status, system health, and full config in parallel.
   async function loadData() {
     try {
-      const [s, h] = await Promise.all([get('/api/status'), get('/health')]);
+      const [s, h, c] = await Promise.all([
+        get('/api/status'),
+        get('/health'),
+        get('/api/config'),
+      ]);
       status = s;
       health = h;
+      config = c;
 
     } catch (e) {
       toasts.error(e instanceof Error ? e.message : String(e));
     } finally {
       loading = false;
     }
+  }
+
+  // Format a snake_case key into a readable label.
+  function formatKey(key: string): string {
+    return key.replace(/_/g, ' ');
+  }
+
+  // Check if a value is a redacted secret.
+  function isRedacted(value: string): boolean {
+    return value === '********';
   }
 
   onMount(loadData);
@@ -45,36 +75,16 @@
             <span class="info-label">Username</span>
             <span>{status.username}</span>
           </div>
-          <div class="info-row">
-            <span class="info-label">Guilds</span>
-            <span>{status.guild_count}</span>
-          </div>
-          {#each status.guilds as guild}
-            <div class="info-row indent">
+          {#if status.guilds?.length}
+            <div class="info-row">
               <span class="info-label">Guild</span>
-              <span>{guild.name} ({guild.member_count} members)</span>
+              <span title={status.guilds[0].id}>{status.guilds[0].name} ({status.guilds[0].member_count} members)</span>
             </div>
-          {/each}
+          {/if}
           <div class="info-row">
             <span class="info-label">Uptime</span>
             <span>{formatUptime(status.uptime_seconds)}</span>
           </div>
-        {/if}
-      </div>
-    </div>
-
-    <div class="section">
-      <h3>Bot Configuration</h3>
-      <div class="info-card">
-        {#if status?.config}
-          {#each Object.entries(status.config) as [key, value]}
-            <div class="info-row">
-              <span class="info-label">{key.replace(/_/g, ' ')}</span>
-              <code>{value}</code>
-            </div>
-          {/each}
-        {:else}
-          <p class="muted">No config available (bot not connected).</p>
         {/if}
       </div>
     </div>
@@ -85,7 +95,7 @@
         {#if health}
           <div class="info-row">
             <span class="info-label">Status</span>
-            <StatusBadge status={health.status === 'ok' ? 'ok' : 'degraded'} label={health.status} />
+            <StatusBadge status={health.status === 'healthy' ? 'ok' : 'degraded'} label={health.status} />
           </div>
           <div class="info-row">
             <span class="info-label">Database</span>
@@ -112,6 +122,26 @@
         {/if}
       </div>
     </div>
+
+    {#if config}
+      {#each config.sections as section}
+        <div class="section">
+          <h3>{section.name}</h3>
+          <div class="info-card">
+            {#each section.entries as entry}
+              <div class="info-row">
+                <span class="info-label">{formatKey(entry.key)}</span>
+                {#if isRedacted(entry.value)}
+                  <code class="redacted">{entry.value}</code>
+                {:else}
+                  <code>{entry.value || '(empty)'}</code>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/each}
+    {/if}
   {/if}
 </div>
 
@@ -120,12 +150,13 @@
     max-width: 700px;
   }
 
-  .info-row.indent {
-    padding-left: 20px;
+  .info-label {
+    min-width: 160px;
+    text-transform: capitalize;
   }
 
-  .info-label {
-    min-width: 140px;
-    text-transform: capitalize;
+  .redacted {
+    opacity: 0.5;
+    font-style: italic;
   }
 </style>
