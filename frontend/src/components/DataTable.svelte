@@ -1,10 +1,22 @@
-<script>
-  let { columns = [], rows = [], onrowclick = null } = $props();
+<script lang="ts">
+  interface Column {
+    key: string;
+    label: string;
+    sortable?: boolean;
+    render?: (value: any, row: any) => string;
+  }
+
+  let { columns = [], rows = [], onrowclick = null }: {
+    columns?: Column[];
+    rows?: any[];
+    onrowclick?: ((row: any) => void) | null;
+  } = $props();
+
   let sortKey = $state('');
   let sortDir = $state(1);
 
   // Toggle sort direction on the given column, or set it as the new sort key.
-  function handleSort(key) {
+  function handleSort(key: string): void {
     if (sortKey === key) {
       sortDir = sortDir * -1;
     } else {
@@ -14,7 +26,7 @@
   }
 
   // Handle Enter or Space on a row to trigger the row click callback.
-  function handleRowKeydown(e, row) {
+  function handleRowKeydown(e: KeyboardEvent, row: any): void {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onrowclick?.(row);
@@ -92,7 +104,7 @@
   </table>
 </div>
 
-<style>
+<style lang="scss">
   .table-wrap {
     overflow-x: auto;
   }
@@ -106,10 +118,10 @@
     font-weight: inherit;
     cursor: pointer;
     white-space: nowrap;
-  }
 
-  .sort-btn:hover {
-    color: var(--accent);
+    &:hover {
+      color: var(--accent);
+    }
   }
 
   .sort-arrow {

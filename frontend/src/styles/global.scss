@@ -44,10 +44,10 @@ body {
 a {
   color: var(--accent);
   text-decoration: none;
-}
 
-a:hover {
-  color: var(--accent-hover);
+  &:hover {
+    color: var(--accent-hover);
+  }
 }
 
 button {
@@ -56,6 +56,13 @@ button {
   font-size: inherit;
 }
 
+input, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+// --- Buttons ---
+
 .btn,
 .btn-sm {
   border-radius: var(--radius);
@@ -63,6 +70,17 @@ button {
   background: rgba(122, 162, 247, 0.06);
   color: var(--text-primary);
   transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  &:hover:not(:disabled) {
+    background: rgba(122, 162, 247, 0.15);
+    border-color: rgba(122, 162, 247, 0.5);
+    color: var(--text-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .btn {
@@ -75,19 +93,6 @@ button {
   font-size: 0.8em;
 }
 
-.btn:hover:not(:disabled),
-.btn-sm:hover:not(:disabled) {
-  background: rgba(122, 162, 247, 0.15);
-  border-color: rgba(122, 162, 247, 0.5);
-  color: var(--text-primary);
-}
-
-.btn:disabled,
-.btn-sm:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .btn-primary {
   padding: 6px 16px;
   font-size: 0.9em;
@@ -97,58 +102,55 @@ button {
   color: var(--bg-primary);
   font-weight: 600;
   transition: background 0.15s, border-color 0.15s;
-}
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-}
+  &:hover:not(:disabled) {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
 
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .btn-danger {
   color: var(--error);
   border-color: var(--error);
   background: rgba(247, 118, 142, 0.06);
-}
 
-.btn-danger:hover:not(:disabled) {
-  background: rgba(247, 118, 142, 0.2);
-  border-color: var(--error);
-  color: var(--error);
+  &:hover:not(:disabled) {
+    background: rgba(247, 118, 142, 0.2);
+    border-color: var(--error);
+    color: var(--error);
+  }
 }
 
 .btn-success {
   color: var(--success);
   border-color: var(--success);
   background: rgba(158, 206, 106, 0.06);
-}
 
-.btn-success:hover:not(:disabled) {
-  background: rgba(158, 206, 106, 0.2);
-  border-color: var(--success);
-  color: var(--success);
+  &:hover:not(:disabled) {
+    background: rgba(158, 206, 106, 0.2);
+    border-color: var(--success);
+    color: var(--success);
+  }
 }
 
 .btn-info {
   color: var(--accent);
   border-color: var(--accent);
   background: rgba(122, 162, 247, 0.06);
+
+  &:hover:not(:disabled) {
+    background: rgba(122, 162, 247, 0.2);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 }
 
-.btn-info:hover:not(:disabled) {
-  background: rgba(122, 162, 247, 0.2);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-input, select {
-  font-family: inherit;
-  font-size: inherit;
-}
+// --- Tables ---
 
 table {
   border-collapse: collapse;
@@ -182,4 +184,102 @@ code {
   background: var(--bg-tertiary);
   padding: 2px 6px;
   border-radius: 3px;
+}
+
+// --- Headings ---
+
+h2 {
+  margin-bottom: 20px;
+}
+
+h3 {
+  font-size: 1em;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+// --- Layout utilities ---
+
+.center {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.section {
+  margin-bottom: 24px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+// --- Info card pattern ---
+
+.info-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.info-label {
+  color: var(--text-muted);
+  min-width: 120px;
+  font-size: 0.85em;
+}
+
+// --- Text truncation ---
+
+.text-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+// --- Form controls ---
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+}
+
+// --- Miscellaneous ---
+
+.muted {
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.error-banner {
+  background: rgba(247, 118, 142, 0.1);
+  border: 1px solid var(--error);
+  color: var(--error);
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  font-size: 0.9em;
 }

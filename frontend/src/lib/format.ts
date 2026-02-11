@@ -1,8 +1,9 @@
 // Format an ISO date string to a short locale representation.
-export function formatDate(isoString) {
+export function formatDate(isoString: string | null | undefined): string {
   if (!isoString) {
     return '-';
   }
+
   const d = new Date(isoString);
   return d.toLocaleDateString(undefined, {
     month: 'short',
@@ -13,7 +14,7 @@ export function formatDate(isoString) {
 }
 
 // Format milliseconds to a human-readable duration.
-export function formatDuration(ms) {
+export function formatDuration(ms: number | null | undefined): string {
   if (ms == null) {
     return '-';
   }
@@ -24,7 +25,7 @@ export function formatDuration(ms) {
 }
 
 // Format seconds to a human-readable uptime string.
-export function formatUptime(seconds) {
+export function formatUptime(seconds: number | null | undefined): string {
   if (seconds == null) {
     return '-';
   }
@@ -38,7 +39,7 @@ export function formatUptime(seconds) {
 }
 
 // Format a byte count to a human-readable string (B, KB, MB).
-export function formatBytes(bytes) {
+export function formatBytes(bytes: number | null | undefined): string {
   if (bytes == null || bytes === 0) {
     return '0 B';
   }
@@ -52,7 +53,7 @@ export function formatBytes(bytes) {
 }
 
 // Truncate text to a max length with ellipsis.
-export function truncate(text, max = 50) {
+export function truncate(text: string | null | undefined, max: number = 50): string {
   if (!text) {
     return '';
   }

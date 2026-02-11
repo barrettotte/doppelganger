@@ -1,26 +1,26 @@
-<script>
+<script lang="ts">
   import { onDestroy } from 'svelte';
-  import { get, post } from '../lib/api.js';
-  import { startPolling } from '../lib/polling.js';
-  import { fetchUserMaps } from '../lib/users.js';
-  import { formatDate, formatDuration, truncate } from '../lib/format.js';
+  import { get, post } from '../lib/api';
+  import { startPolling } from '../lib/polling';
+  import { fetchUserMaps } from '../lib/users';
+  import { formatDate, formatDuration, truncate } from '../lib/format';
   import StatusBadge from '../components/StatusBadge.svelte';
   import EmptyState from '../components/EmptyState.svelte';
   import Modal from '../components/Modal.svelte';
   import Spinner from '../components/Spinner.svelte';
 
-  let queueState = $state(null);
-  let history = $state([]);
+  let queueState: any = $state(null);
+  let history: any[] = $state([]);
   let loading = $state(true);
-  let userById = $state(new Map());
-  let userByDiscordId = $state(new Map());
+  let userById: Map<number, string> = $state(new Map());
+  let userByDiscordId: Map<string, string> = $state(new Map());
   let statusFilter = $state('');
   let autoRefresh = $state(true);
 
   let modalOpen = $state(false);
   let modalTitle = $state('');
   let modalMessage = $state('');
-  let modalAction = $state(() => {});
+  let modalAction: () => void | Promise<void> = $state(() => {});
 
   // Fetch the current queue state from the API.
   async function refreshQueue() {
@@ -62,10 +62,10 @@
     await Promise.all([refreshQueue(), refreshHistory(), refreshUsers()]);
   }
 
-  let stopPolling = null;
+  let stopPolling: (() => void) | null = null;
 
   // Start or stop the polling loop based on the auto-refresh toggle.
-  function setupPolling() {
+  function setupPolling(): void {
     if (stopPolling) {
       stopPolling();
     }
@@ -89,7 +89,7 @@
   });
 
   // Open a confirmation modal to cancel a queued request.
-  function confirmCancel(requestId) {
+  function confirmCancel(requestId: number): void {
     modalTitle = 'Cancel Request';
     modalMessage = `Cancel request #${requestId}?`;
 
@@ -102,7 +102,7 @@
   }
 
   // Open a confirmation modal to bump a request to the front of the queue.
-  function confirmBump(requestId) {
+  function confirmBump(requestId: number): void {
     modalTitle = 'Bump Request';
     modalMessage = `Move request #${requestId} to the front of the queue?`;
 
@@ -115,8 +115,8 @@
   }
 
   // Update the status filter and reload request history.
-  function handleFilterChange(e) {
-    statusFilter = e.target.value;
+  function handleFilterChange(e: Event): void {
+    statusFilter = (e.target as HTMLSelectElement).value;
     loading = true;
     refreshHistory();
   }
@@ -232,29 +232,17 @@
   onconfirm={modalAction} oncancel={() => (modalOpen = false)}
 />
 
-<style>
+<style lang="scss">
   .queue-page {
     max-width: 1000px;
-  }
-
-  h2 {
-    margin-bottom: 20px;
   }
 
   .section {
     margin-bottom: 32px;
   }
 
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-
   h3 {
-    font-size: 1em;
-    color: var(--text-secondary);
+    margin-bottom: 0;
   }
 
   .processing-card {
@@ -275,32 +263,9 @@
 
   .text-cell {
     max-width: 180px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .center {
-    display: flex;
-    justify-content: center;
     padding: 24px;
   }
-
-  .toggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.85em;
-    color: var(--text-secondary);
-    cursor: pointer;
-  }
-
-  select {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    padding: 4px 8px;
-    border-radius: var(--radius);
-  }
-
 </style>

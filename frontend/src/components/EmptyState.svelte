@@ -1,12 +1,12 @@
-<script>
-  let { message = 'No data to display' } = $props();
+<script lang="ts">
+  let { message = 'No data to display' }: { message?: string } = $props();
 </script>
 
 <div class="empty">
   <p>{message}</p>
 </div>
 
-<style>
+<style lang="scss">
   .empty {
     display: flex;
     align-items: center;

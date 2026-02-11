@@ -1,8 +1,9 @@
-<script>
+<script lang="ts">
+  import type { Snippet } from 'svelte';
   import Header from './Header.svelte';
   import Sidebar from './Sidebar.svelte';
 
-  let { children } = $props();
+  let { children }: { children: Snippet } = $props();
 </script>
 
 <div class="layout">
@@ -15,7 +16,7 @@
   </div>
 </div>
 
-<style>
+<style lang="scss">
   .layout {
     display: flex;
     height: 100vh;

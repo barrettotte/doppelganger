@@ -1,6 +1,6 @@
 <span class="spinner"></span>
 
-<style>
+<style lang="scss">
   .spinner {
     display: inline-block;
     width: 20px;

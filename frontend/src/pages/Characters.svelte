@@ -1,26 +1,26 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
-  import { get, del, getAudio } from '../lib/api.js';
-  import { formatDate } from '../lib/format.js';
+  import { get, del, getAudio } from '../lib/api';
+  import { formatDate } from '../lib/format';
   import AudioPlayer from '../components/AudioPlayer.svelte';
   import EmptyState from '../components/EmptyState.svelte';
   import Modal from '../components/Modal.svelte';
   import Spinner from '../components/Spinner.svelte';
 
-  let characters = $state([]);
+  let characters: any[] = $state([]);
   let loading = $state(true);
-  let testingVoice = $state(null);
-  let audioUrl = $state(null);
+  let testingVoice: string | null = $state(null);
+  let audioUrl: string | null = $state(null);
 
   // Add form
   let newName = $state('');
-  let newFile = $state(null);
+  let newFile: File | null = $state(null);
   let uploading = $state(false);
   let uploadError = $state('');
 
   // Delete modal
   let modalOpen = $state(false);
-  let deleteTarget = $state(null);
+  let deleteTarget: any = $state(null);
 
   // Fetch the list of characters from the API.
   async function loadCharacters() {
@@ -37,7 +37,7 @@
   onMount(loadCharacters);
 
   // Generate a sample TTS clip for the character and create a playable blob URL.
-  async function testVoice(character) {
+  async function testVoice(character: any): Promise<void> {
     testingVoice = character.name;
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
@@ -58,7 +58,7 @@
   }
 
   // Open a confirmation modal for deleting a character.
-  function confirmDelete(character) {
+  function confirmDelete(character: any): void {
     deleteTarget = character;
     modalOpen = true;
   }
@@ -79,8 +79,8 @@
   }
 
   // Store the selected WAV file from the file input for upload.
-  function handleFileChange(e) {
-    const files = e.target.files;
+  function handleFileChange(e: Event): void {
+    const files = (e.target as HTMLInputElement).files;
     if (files && files.length > 0) {
       newFile = files[0];
     }
@@ -114,7 +114,7 @@
       await loadCharacters();
 
     } catch (e) {
-      uploadError = e.message;
+      uploadError = e instanceof Error ? e.message : String(e);
     } finally {
       uploading = false;
     }
@@ -187,13 +187,9 @@
   onconfirm={doDelete} oncancel={() => { modalOpen = false; deleteTarget = null; }}
 />
 
-<style>
+<style lang="scss">
   .characters-page {
     max-width: 900px;
-  }
-
-  h2 {
-    margin-bottom: 20px;
   }
 
   .add-form {
@@ -202,12 +198,11 @@
     border-radius: var(--radius);
     padding: 20px;
     margin-bottom: 24px;
-  }
 
-  .add-form h3 {
-    font-size: 0.95em;
-    color: var(--text-secondary);
-    margin-bottom: 16px;
+    h3 {
+      font-size: 0.95em;
+      margin-bottom: 16px;
+    }
   }
 
   .form-fields {
@@ -221,13 +216,13 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-  }
 
-  .field label {
-    font-size: 0.8em;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    label {
+      font-size: 0.8em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
   }
 
   input[type="text"] {
@@ -238,10 +233,10 @@
     border-radius: var(--radius);
     width: 100%;
     box-sizing: border-box;
-  }
 
-  input[type="text"]::placeholder {
-    color: var(--text-muted);
+    &::placeholder {
+      color: var(--text-muted);
+    }
   }
 
   .file-pick {
@@ -253,19 +248,19 @@
     padding: 8px 12px;
     cursor: pointer;
     transition: border-color 0.15s;
-  }
 
-  .file-pick:hover {
-    border-color: var(--accent);
-  }
+    &:hover {
+      border-color: var(--accent);
+    }
 
-  .file-pick.has-file {
-    border-style: solid;
-    border-color: var(--accent);
-  }
+    &.has-file {
+      border-style: solid;
+      border-color: var(--accent);
+    }
 
-  .file-pick input[type="file"] {
-    display: none;
+    input[type="file"] {
+      display: none;
+    }
   }
 
   .file-label {
@@ -301,11 +296,11 @@
     flex-direction: column;
     gap: 16px;
     transition: border-color 0.15s, box-shadow 0.15s;
-  }
 
-  .char-card:hover {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent), var(--shadow);
+    &:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent), var(--shadow);
+    }
   }
 
   .char-top {
@@ -347,18 +342,11 @@
 
   .audio-section {
     margin-top: 24px;
-  }
 
-  .audio-section h3 {
-    font-size: 0.95em;
-    color: var(--text-secondary);
-    margin-bottom: 8px;
-  }
-
-  .center {
-    display: flex;
-    justify-content: center;
-    padding: 48px;
+    h3 {
+      font-size: 0.95em;
+      margin-bottom: 8px;
+    }
   }
 
   .btn-card {
@@ -370,39 +358,39 @@
     background: rgba(122, 162, 247, 0.06);
     color: var(--text-primary);
     transition: background 0.15s, color 0.15s, border-color 0.15s;
-  }
 
-  .btn-card:hover:not(:disabled) {
-    background: rgba(122, 162, 247, 0.15);
-    border-color: rgba(122, 162, 247, 0.5);
-  }
+    &:hover:not(:disabled) {
+      background: rgba(122, 162, 247, 0.15);
+      border-color: rgba(122, 162, 247, 0.5);
+    }
 
-  .btn-card.btn-card-success {
-    color: var(--success);
-    border-color: var(--success);
-    background: rgba(158, 206, 106, 0.06);
-  }
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
-  .btn-card.btn-card-success:hover:not(:disabled) {
-    background: rgba(158, 206, 106, 0.2);
-    border-color: var(--success);
-    color: var(--success);
-  }
+    &-success {
+      color: var(--success);
+      border-color: var(--success);
+      background: rgba(158, 206, 106, 0.06);
 
-  .btn-card.btn-danger {
-    color: var(--error);
-    border-color: var(--error);
-    background: rgba(247, 118, 142, 0.06);
-  }
+      &:hover:not(:disabled) {
+        background: rgba(158, 206, 106, 0.2);
+        border-color: var(--success);
+        color: var(--success);
+      }
+    }
 
-  .btn-card.btn-danger:hover:not(:disabled) {
-    background: rgba(247, 118, 142, 0.2);
-    border-color: var(--error);
-    color: var(--error);
-  }
+    &.btn-danger {
+      color: var(--error);
+      border-color: var(--error);
+      background: rgba(247, 118, 142, 0.06);
 
-  .btn-card:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+      &:hover:not(:disabled) {
+        background: rgba(247, 118, 142, 0.2);
+        border-color: var(--error);
+        color: var(--error);
+      }
+    }
   }
 </style>

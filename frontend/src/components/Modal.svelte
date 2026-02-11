@@ -1,8 +1,14 @@
-<script>
-  let { open = false, title = 'Confirm', message = '', onconfirm = () => {}, oncancel = () => {} } = $props();
+<script lang="ts">
+  let { open = false, title = 'Confirm', message = '', onconfirm = () => {}, oncancel = () => {} }: {
+    open?: boolean;
+    title?: string;
+    message?: string;
+    onconfirm?: () => void | Promise<void>;
+    oncancel?: () => void;
+  } = $props();
 
   // Close the modal when clicking the overlay or pressing Escape.
-  function handleOverlayKeydown(e) {
+  function handleOverlayKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       oncancel();
     }
@@ -24,7 +30,7 @@
   </div>
 {/if}
 
-<style>
+<style lang="scss">
   .overlay {
     position: fixed;
     inset: 0;
@@ -43,21 +49,21 @@
     min-width: 360px;
     max-width: 480px;
     box-shadow: var(--shadow);
+
+    .body {
+      margin-bottom: 20px;
+      color: var(--text-secondary);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
   }
 
   h3 {
     margin-bottom: 12px;
     font-size: 1.1em;
-  }
-
-  .body {
-    margin-bottom: 20px;
-    color: var(--text-secondary);
-  }
-
-  .actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
   }
 </style>

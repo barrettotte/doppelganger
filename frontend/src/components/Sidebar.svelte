@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { location } from 'svelte-spa-router';
 
   const links = [
@@ -12,7 +12,7 @@
   ];
 
   // Check if a nav link matches the current route path.
-  function isActive(linkPath, currentPath) {
+  function isActive(linkPath: string, currentPath: string): boolean {
     if (linkPath === '/') {
       return currentPath === '/';
     }
@@ -32,7 +32,7 @@
   </ul>
 </nav>
 
-<style>
+<style lang="scss">
   nav {
     width: var(--sidebar-width);
     height: 100%;
@@ -52,17 +52,17 @@
     color: var(--text-secondary);
     font-size: 0.95em;
     transition: background 0.15s, color 0.15s;
-  }
 
-  a:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-  }
+    &:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
 
-  a.active {
-    color: var(--accent);
-    background: var(--bg-tertiary);
-    border-left: 3px solid var(--accent);
-    padding-left: 17px;
+    &.active {
+      color: var(--accent);
+      background: var(--bg-tertiary);
+      border-left: 3px solid var(--accent);
+      padding-left: 17px;
+    }
   }
 </style>

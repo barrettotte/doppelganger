@@ -1,10 +1,10 @@
-<script>
+<script lang="ts">
   import { onDestroy } from 'svelte';
-  import { get } from '../lib/api.js';
-  import { startPolling } from '../lib/polling.js';
+  import { get } from '../lib/api';
+  import { startPolling } from '../lib/polling';
   import StatusBadge from './StatusBadge.svelte';
 
-  let health = $state(null);
+  let health: any = $state(null);
 
   const stop = startPolling(async () => {
     try {
@@ -28,7 +28,7 @@
   </div>
 </header>
 
-<style>
+<style lang="scss">
   header {
     height: var(--header-height);
     background: var(--bg-secondary);
@@ -43,10 +43,10 @@
     font-size: 1.1em;
     font-weight: 600;
     color: var(--text-primary);
-  }
 
-  .title:hover {
-    color: var(--text-primary);
+    &:hover {
+      color: var(--text-primary);
+    }
   }
 
   .status {

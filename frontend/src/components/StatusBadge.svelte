@@ -1,7 +1,7 @@
-<script>
-  let { status = 'unknown', label = '' } = $props();
+<script lang="ts">
+  let { status = 'unknown', label = '' }: { status?: string; label?: string } = $props();
 
-  const colorMap = {
+  const colorMap: Record<string, string> = {
     ok: 'var(--success)',
     healthy: 'var(--success)',
     connected: 'var(--success)',
@@ -18,7 +18,6 @@
 
   let color = $derived(colorMap[status] || 'var(--text-muted)');
   let text = $derived(label || status);
-
 </script>
 
 <span class="badge" style="--dot-color: {color}">
@@ -26,7 +25,7 @@
   {text}
 </span>
 
-<style>
+<style lang="scss">
   .badge {
     display: inline-flex;
     align-items: center;

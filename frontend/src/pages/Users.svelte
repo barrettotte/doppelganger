@@ -1,20 +1,20 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import { push } from 'svelte-spa-router';
-  import { get, post } from '../lib/api.js';
-  import { formatDate } from '../lib/format.js';
+  import { get, post } from '../lib/api';
+  import { formatDate } from '../lib/format';
   import StatusBadge from '../components/StatusBadge.svelte';
   import EmptyState from '../components/EmptyState.svelte';
   import Modal from '../components/Modal.svelte';
   import Spinner from '../components/Spinner.svelte';
 
-  let users = $state([]);
+  let users: any[] = $state([]);
   let loading = $state(true);
 
   let modalOpen = $state(false);
   let modalTitle = $state('');
   let modalMessage = $state('');
-  let modalAction = $state(() => {});
+  let modalAction: () => void | Promise<void> = $state(() => {});
 
   // Fetch the full list of users from the API.
   async function loadUsers() {
@@ -31,7 +31,7 @@
   onMount(loadUsers);
 
   // Navigate to user detail on Enter or Space key press.
-  function handleRowKeydown(e, user) {
+  function handleRowKeydown(e: KeyboardEvent, user: any): void {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       push(`/users/${user.id}`);
@@ -39,7 +39,7 @@
   }
 
   // Open a confirmation modal to toggle a user's blacklist status.
-  function confirmToggle(user) {
+  function confirmToggle(user: any): void {
     const newState = !user.blacklisted;
     modalTitle = newState ? 'Blacklist User' : 'Unblacklist User';
     modalMessage = `${newState ? 'Blacklist' : 'Unblacklist'} user ${user.discord_id}?`;
@@ -102,23 +102,12 @@
   onconfirm={modalAction} oncancel={() => (modalOpen = false)}
 />
 
-<style>
+<style lang="scss">
   .users-page {
     max-width: 900px;
-  }
-
-  h2 {
-    margin-bottom: 20px;
-  }
-
-  .center {
-    display: flex;
-    justify-content: center;
-    padding: 48px;
   }
 
   .clickable {
     cursor: pointer;
   }
-
 </style>

@@ -1,14 +1,14 @@
-<script>
+<script lang="ts">
   import { onDestroy } from 'svelte';
-  import { get } from '../lib/api.js';
-  import { startPolling } from '../lib/polling.js';
-  import { formatDate, formatDuration } from '../lib/format.js';
+  import { get } from '../lib/api';
+  import { startPolling } from '../lib/polling';
+  import { formatDate, formatDuration } from '../lib/format';
   import StatusBadge from '../components/StatusBadge.svelte';
   import Spinner from '../components/Spinner.svelte';
 
-  let metrics = $state(null);
-  let status = $state(null);
-  let recentRequests = $state([]);
+  let metrics: any = $state(null);
+  let status: any = $state(null);
+  let recentRequests: any[] = $state([]);
   let loading = $state(true);
 
   // Fetch metrics, bot status, and recent requests in parallel.
@@ -104,19 +104,9 @@
   {/if}
 </div>
 
-<style>
+<style lang="scss">
   .dashboard {
     max-width: 1000px;
-  }
-
-  h2 {
-    margin-bottom: 20px;
-  }
-
-  .center {
-    display: flex;
-    justify-content: center;
-    padding: 48px;
   }
 
   .cards {
@@ -142,35 +132,21 @@
   .card-value {
     font-size: 1.4em;
     font-weight: 600;
-  }
 
-  .card-value.success {
-    color: var(--success);
-  }
+    &.success {
+      color: var(--success);
+    }
 
-  .card-value.error {
-    color: var(--error);
+    &.error {
+      color: var(--error);
+    }
   }
 
   .section {
     margin-top: 8px;
   }
 
-  h3 {
-    margin-bottom: 12px;
-    font-size: 1em;
-    color: var(--text-secondary);
-  }
-
-  .text-cell {
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .muted {
-    color: var(--text-muted);
     padding: 24px 0;
   }
 </style>

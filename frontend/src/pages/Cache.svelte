@@ -1,36 +1,36 @@
-<script>
-  import { get, post, del, getBlob } from '../lib/api.js';
-  import { formatBytes, truncate } from '../lib/format.js';
+<script lang="ts">
+  import { get, post, del, getBlob } from '../lib/api';
+  import { formatBytes, truncate } from '../lib/format';
   import AudioPlayer from '../components/AudioPlayer.svelte';
   import EmptyState from '../components/EmptyState.svelte';
   import Modal from '../components/Modal.svelte';
   import Spinner from '../components/Spinner.svelte';
 
-  let cacheState = $state(null);
+  let cacheState: any = $state(null);
   let loading = $state(true);
   let error = $state('');
-  let playingKey = $state(null);
-  let audioUrl = $state(null);
+  let playingKey: string | null = $state(null);
+  let audioUrl: string | null = $state(null);
 
   let modalOpen = $state(false);
   let modalTitle = $state('');
   let modalMessage = $state('');
-  let modalAction = $state(() => {});
+  let modalAction: () => void | Promise<void> = $state(() => {});
 
   // Fetch the current cache state from the API.
-  async function refresh() {
+  async function refresh(): Promise<void> {
     try {
       cacheState = await get('/api/cache');
       error = '';
     } catch (e) {
-      error = e.message;
+      error = e instanceof Error ? e.message : String(e);
     } finally {
       loading = false;
     }
   }
 
   // Toggle the cache enabled/disabled state.
-  async function handleToggle() {
+  async function handleToggle(): Promise<void> {
     if (!cacheState) {
       return;
     }
@@ -38,12 +38,12 @@
       await post('/api/cache/toggle', { enabled: !cacheState.enabled });
       await refresh();
     } catch (e) {
-      error = e.message;
+      error = e instanceof Error ? e.message : String(e);
     }
   }
 
   // Open a confirmation modal to flush all cache entries.
-  function confirmFlush() {
+  function confirmFlush(): void {
     modalTitle = 'Flush Cache';
     modalMessage = `Remove all ${cacheState?.entry_count ?? 0} cached entries?`;
     modalAction = async () => {
@@ -53,7 +53,7 @@
         await refresh();
 
       } catch (e) {
-        error = e.message;
+        error = e instanceof Error ? e.message : String(e);
         modalOpen = false;
       }
     };
@@ -61,7 +61,7 @@
   }
 
   // Open a confirmation modal to delete a single cache entry.
-  function confirmDelete(key, character) {
+  function confirmDelete(key: string, character: string): void {
     modalTitle = 'Delete Entry';
     modalMessage = `Remove cached entry for "${character}"?`;
     modalAction = async () => {
@@ -71,7 +71,7 @@
         await refresh();
 
       } catch (e) {
-        error = e.message;
+        error = e instanceof Error ? e.message : String(e);
         modalOpen = false;
       }
     };
@@ -79,7 +79,7 @@
   }
 
   // Play a cached audio file inline.
-  async function handlePlay(key) {
+  async function handlePlay(key: string): Promise<void> {
     if (playingKey === key) {
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
@@ -96,12 +96,12 @@
       audioUrl = URL.createObjectURL(blob);
       playingKey = key;
     } catch (e) {
-      error = e.message;
+      error = e instanceof Error ? e.message : String(e);
     }
   }
 
   // Download a cached audio file.
-  async function handleDownload(key, character) {
+  async function handleDownload(key: string, character: string): Promise<void> {
     try {
       const blob = await getBlob(`/api/cache/${key}/download`);
       const url = URL.createObjectURL(blob);
@@ -113,12 +113,12 @@
 
       URL.revokeObjectURL(url);
     } catch (e) {
-      error = e.message;
+      error = e instanceof Error ? e.message : String(e);
     }
   }
 
   // Format an epoch timestamp to a short locale string.
-  function formatEpoch(epoch) {
+  function formatEpoch(epoch: number | null | undefined): string {
     if (!epoch) {
       return '-';
     }
@@ -220,7 +220,7 @@
   onconfirm={modalAction} oncancel={() => (modalOpen = false)}
 />
 
-<style>
+<style lang="scss">
   .cache-page {
     max-width: 1000px;
   }
@@ -240,15 +240,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-  }
-
-  .toggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.85em;
-    color: var(--text-secondary);
-    cursor: pointer;
   }
 
   .stats {
@@ -283,26 +274,21 @@
   .badge {
     font-size: 0.85em;
     font-weight: 600;
-  }
 
-  .badge-ok {
-    color: var(--success, #9ece6a);
-  }
+    &-ok {
+      color: var(--success, #9ece6a);
+    }
 
-  .badge-off {
-    color: var(--text-muted);
+    &-off {
+      color: var(--text-muted);
+    }
   }
 
   .text-cell {
     max-width: 240px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .center {
-    display: flex;
-    justify-content: center;
     padding: 24px;
   }
 
@@ -310,24 +296,15 @@
     white-space: nowrap;
   }
 
-  .player-row td {
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-    padding: 4px 12px 8px;
-  }
+  .player-row {
+    td {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 4px 12px 8px;
+    }
 
-  .player-row:hover td {
-    background: var(--bg-secondary);
+    &:hover td {
+      background: var(--bg-secondary);
+    }
   }
-
-  .error-banner {
-    background: rgba(247, 118, 142, 0.1);
-    border: 1px solid var(--error);
-    color: var(--error);
-    padding: 8px 14px;
-    border-radius: var(--radius);
-    margin-bottom: 16px;
-    font-size: 0.9em;
-  }
-
 </style>

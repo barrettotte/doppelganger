@@ -1,18 +1,18 @@
-<script>
+<script lang="ts">
   import { onDestroy } from 'svelte';
-  import { get } from '../lib/api.js';
-  import { startPolling } from '../lib/polling.js';
-  import { fetchUserMaps } from '../lib/users.js';
-  import { formatDate, formatDuration } from '../lib/format.js';
+  import { get } from '../lib/api';
+  import { startPolling } from '../lib/polling';
+  import { fetchUserMaps } from '../lib/users';
+  import { formatDate, formatDuration } from '../lib/format';
   import StatusBadge from '../components/StatusBadge.svelte';
   import EmptyState from '../components/EmptyState.svelte';
   import Spinner from '../components/Spinner.svelte';
 
-  let metrics = $state(null);
-  let auditEntries = $state([]);
-  let recentRequests = $state([]);
+  let metrics: any = $state(null);
+  let auditEntries: any[] = $state([]);
+  let recentRequests: any[] = $state([]);
   let loading = $state(true);
-  let userById = $state(new Map());
+  let userById: Map<number, string> = $state(new Map());
 
   let auditFilter = $state('');
   let auditLimit = $state(50);
@@ -61,14 +61,14 @@
   onDestroy(stop);
 
   // Update the audit action filter and reload audit entries.
-  function handleAuditFilterChange(e) {
-    auditFilter = e.target.value;
+  function handleAuditFilterChange(e: Event): void {
+    auditFilter = (e.target as HTMLSelectElement).value;
     loadAudit();
   }
 
   // Update the audit entry limit and reload audit entries.
-  function handleAuditLimitChange(e) {
-    auditLimit = Number(e.target.value);
+  function handleAuditLimitChange(e: Event): void {
+    auditLimit = Number((e.target as HTMLSelectElement).value);
     loadAudit();
   }
 </script>
@@ -224,19 +224,9 @@
   {/if}
 </div>
 
-<style>
+<style lang="scss">
   .metrics-page {
     max-width: 1000px;
-  }
-
-  h2 {
-    margin-bottom: 20px;
-  }
-
-  .center {
-    display: flex;
-    justify-content: center;
-    padding: 48px;
   }
 
   .cards {
@@ -262,14 +252,14 @@
   .card-value {
     font-size: 1.3em;
     font-weight: 600;
-  }
 
-  .card-value.success {
-    color: var(--success);
-  }
+    &.success {
+      color: var(--success);
+    }
 
-  .card-value.error {
-    color: var(--error);
+    &.error {
+      color: var(--error);
+    }
   }
 
   .two-col {
@@ -279,34 +269,9 @@
     margin-bottom: 32px;
   }
 
-  .section {
-    margin-bottom: 24px;
-  }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-
-  h3 {
-    font-size: 1em;
-    color: var(--text-secondary);
-    margin-bottom: 12px;
-  }
-
   .audit-controls {
     display: flex;
     gap: 8px;
-  }
-
-  select {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    padding: 4px 8px;
-    border-radius: var(--radius);
   }
 
   .details-cell {

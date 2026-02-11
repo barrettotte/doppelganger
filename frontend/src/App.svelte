@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import Router from 'svelte-spa-router';
   import Layout from './components/Layout.svelte';
   import Dashboard from './pages/Dashboard.svelte';

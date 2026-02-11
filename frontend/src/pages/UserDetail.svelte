@@ -1,24 +1,24 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
-  import { get, post } from '../lib/api.js';
-  import { formatDate, formatDuration } from '../lib/format.js';
+  import { get, post } from '../lib/api';
+  import { formatDate, formatDuration } from '../lib/format';
   import StatusBadge from '../components/StatusBadge.svelte';
   import EmptyState from '../components/EmptyState.svelte';
   import Modal from '../components/Modal.svelte';
   import Spinner from '../components/Spinner.svelte';
 
-  let { params = {} } = $props();
+  let { params = {} }: { params?: { id?: string } } = $props();
   let userId = $derived(params.id);
 
-  let users = $state([]);
-  let user = $state(null);
-  let requests = $state([]);
+  let users: any[] = $state([]);
+  let user: any = $state(null);
+  let requests: any[] = $state([]);
   let loading = $state(true);
 
   let modalOpen = $state(false);
   let modalTitle = $state('');
   let modalMessage = $state('');
-  let modalAction = $state(() => {});
+  let modalAction: () => void | Promise<void> = $state(() => {});
 
   // Fetch the user info and their TTS request history.
   async function loadData() {
@@ -72,21 +72,21 @@
 
     <div class="info-card">
       <div class="info-row">
-        <span class="label">ID</span>
+        <span class="info-label">ID</span>
         <span>{user.id}</span>
       </div>
       {#if user.username}
         <div class="info-row">
-          <span class="label">Username</span>
+          <span class="info-label">Username</span>
           <span>{user.username}</span>
         </div>
       {/if}
       <div class="info-row">
-        <span class="label">Discord ID</span>
+        <span class="info-label">Discord ID</span>
         <code>{user.discord_id}</code>
       </div>
       <div class="info-row">
-        <span class="label">Status</span>
+        <span class="info-label">Status</span>
         {#if user.blacklisted}
           <StatusBadge status="error" label="Blacklisted" />
         {:else}
@@ -94,7 +94,7 @@
         {/if}
       </div>
       <div class="info-row">
-        <span class="label">Created</span>
+        <span class="info-label">Created</span>
         <span>{formatDate(user.created_at)}</span>
       </div>
       <div class="info-row">
@@ -140,7 +140,7 @@
   onconfirm={modalAction} oncancel={() => (modalOpen = false)}
 />
 
-<style>
+<style lang="scss">
   .user-detail {
     max-width: 900px;
   }
@@ -153,43 +153,10 @@
   }
 
   .info-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
     margin-bottom: 24px;
   }
 
-  .info-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 6px 0;
-  }
-
-  .label {
-    color: var(--text-muted);
+  .info-label {
     min-width: 100px;
-    font-size: 0.85em;
   }
-
-  h3 {
-    font-size: 1em;
-    color: var(--text-secondary);
-    margin-bottom: 12px;
-  }
-
-  .text-cell {
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .center {
-    display: flex;
-    justify-content: center;
-    padding: 48px;
-  }
-
 </style>

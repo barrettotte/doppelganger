@@ -1,5 +1,5 @@
-<script>
-  let { src = null } = $props();
+<script lang="ts">
+  let { src = null }: { src?: string | null } = $props();
 </script>
 
 {#if src}
@@ -8,7 +8,7 @@
   </div>
 {/if}
 
-<style>
+<style lang="scss">
   .player {
     margin: 8px 0;
   }
