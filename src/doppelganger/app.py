@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -22,6 +23,7 @@ from doppelganger.api.middleware import RequestIDMiddleware
 from doppelganger.api.queue import router as queue_router
 from doppelganger.api.requests import router as requests_router
 from doppelganger.api.status import router as status_router
+from doppelganger.api.system import router as system_router
 from doppelganger.api.tts import router as tts_router
 from doppelganger.api.users import router as users_router
 from doppelganger.bot.client import DoppelgangerBot
@@ -42,6 +44,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Manage startup and shutdown resources."""
+    app.state._started_at = time.monotonic()
     settings = get_settings()
 
     engine = create_db_engine(settings)
@@ -150,6 +153,7 @@ def create_app() -> FastAPI:
     app.include_router(status_router)
     app.include_router(cache_router)
     app.include_router(config_router)
+    app.include_router(system_router)
 
     dist_dir = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
     if dist_dir.is_dir():

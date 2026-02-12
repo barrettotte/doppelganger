@@ -9,6 +9,7 @@
     { path: '/users', label: 'Users' },
     { path: '/config', label: 'Config' },
     { path: '/metrics', label: 'Metrics' },
+    { path: '/system', label: 'System' },
   ];
 
   // Check if a nav link matches the current route path.

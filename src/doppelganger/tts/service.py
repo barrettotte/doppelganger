@@ -77,6 +77,17 @@ class TTSService:
         """True if any registered engine is loaded."""
         return any(engine.is_loaded for engine in self._engines.values())
 
+    def engine_statuses(self) -> list[dict[str, str | bool]]:
+        """Return status info for each registered engine."""
+        return [
+            {
+                "engine": engine_type.value,
+                "loaded": engine.is_loaded,
+                "device": engine.device,
+            }
+            for engine_type, engine in self._engines.items()
+        ]
+
     @property
     def device(self) -> str:
         """The device from the first registered engine, or 'cpu' if none."""

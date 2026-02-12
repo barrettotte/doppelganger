@@ -9,6 +9,7 @@
   import Cache from './pages/Cache.svelte';
   import Config from './pages/Config.svelte';
   import Metrics from './pages/Metrics.svelte';
+  import System from './pages/System.svelte';
 
   const routes = {
     '/': Dashboard,
@@ -19,6 +20,7 @@
     '/characters': Characters,
     '/config': Config,
     '/metrics': Metrics,
+    '/system': System,
   };
 </script>
 

@@ -181,3 +181,35 @@ def test_device_from_engine(registry: VoiceRegistry) -> None:
     e1.device = "cuda"
     service.register_engine(e1)
     assert service.device == "cuda"
+
+
+def test_engine_statuses_empty(registry: VoiceRegistry) -> None:
+    """engine_statuses returns empty list with no engines."""
+    service = TTSService(registry)
+    assert service.engine_statuses() == []
+
+
+def test_engine_statuses_multiple(registry: VoiceRegistry) -> None:
+    """engine_statuses returns info for each registered engine."""
+    service = TTSService(registry)
+
+    e1 = _make_mock_engine(EngineType.CHATTERBOX)
+    e1.device = "cuda"
+    e1.is_loaded = True
+    service.register_engine(e1)
+
+    e2 = _make_mock_engine(EngineType.ORPHEUS)
+    e2.device = "cpu"
+    e2.is_loaded = False
+    service.register_engine(e2)
+
+    statuses = service.engine_statuses()
+    assert len(statuses) == 2
+
+    assert statuses[0]["engine"] == "chatterbox"
+    assert statuses[0]["loaded"] is True
+    assert statuses[0]["device"] == "cuda"
+
+    assert statuses[1]["engine"] == "orpheus"
+    assert statuses[1]["loaded"] is False
+    assert statuses[1]["device"] == "cpu"

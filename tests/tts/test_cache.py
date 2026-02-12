@@ -227,3 +227,57 @@ def test_remove_by_character_none() -> None:
     removed = cache.remove_by_character("gollum")
     assert removed == 0
     assert cache.size == 1
+
+
+def test_hits_incremented_on_cache_hit() -> None:
+    """Hits counter increments when an entry is found."""
+    cache = AudioCache(max_size=10)
+    cache.put("gandalf", "hello", b"data")
+
+    assert cache.hits == 0
+    cache.get("gandalf", "hello")
+    assert cache.hits == 1
+    cache.get("gandalf", "hello")
+    assert cache.hits == 2
+
+
+def test_misses_incremented_on_cache_miss() -> None:
+    """Misses counter increments when an entry is not found."""
+    cache = AudioCache(max_size=10)
+
+    assert cache.misses == 0
+    cache.get("gandalf", "hello")
+    assert cache.misses == 1
+    cache.get("gandalf", "world")
+    assert cache.misses == 2
+
+
+def test_hit_rate_zero_with_no_requests() -> None:
+    """Hit rate is 0.0 when no get requests have been made."""
+    cache = AudioCache(max_size=10)
+    assert cache.hit_rate == 0.0
+
+
+def test_hit_rate_calculation() -> None:
+    """Hit rate correctly reflects the ratio of hits to total requests."""
+    cache = AudioCache(max_size=10)
+    cache.put("gandalf", "hello", b"data")
+
+    cache.get("gandalf", "hello")  # hit
+    cache.get("gandalf", "hello")  # hit
+    cache.get("gandalf", "missing")  # miss
+
+    assert cache.hits == 2
+    assert cache.misses == 1
+    assert abs(cache.hit_rate - 2 / 3) < 1e-9
+
+
+def test_disabled_get_does_not_track() -> None:
+    """Disabled cache does not increment hits or misses."""
+    cache = AudioCache(max_size=10)
+    cache.put("gandalf", "hello", b"data")
+    cache.set_enabled(False)
+
+    cache.get("gandalf", "hello")
+    assert cache.hits == 0
+    assert cache.misses == 0

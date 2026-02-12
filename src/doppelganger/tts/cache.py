@@ -25,6 +25,8 @@ class AudioCache:
         self._max_size = max_size
         self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
         self._enabled: bool = True
+        self._hits: int = 0
+        self._misses: int = 0
 
     @property
     def enabled(self) -> bool:
@@ -51,6 +53,24 @@ class AudioCache:
         raw = f"{character}:{text}"
         return hashlib.sha256(raw.encode()).hexdigest()
 
+    @property
+    def hits(self) -> int:
+        """Number of cache hits."""
+        return self._hits
+
+    @property
+    def misses(self) -> int:
+        """Number of cache misses."""
+        return self._misses
+
+    @property
+    def hit_rate(self) -> float:
+        """Cache hit rate as a float between 0 and 1."""
+        total = self._hits + self._misses
+        if total == 0:
+            return 0.0
+        return self._hits / total
+
     def get(self, character: str, text: str) -> bytes | None:
         """Retrieve cached audio. Moves entry to end on hit."""
         if not self._enabled:
@@ -59,8 +79,10 @@ class AudioCache:
         key = self._make_key(character, text)
 
         if key not in self._cache:
+            self._misses += 1
             return None
 
+        self._hits += 1
         self._cache.move_to_end(key)
         return self._cache[key].audio_bytes
 

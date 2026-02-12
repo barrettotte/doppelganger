@@ -8,20 +8,17 @@
   import Spinner from '../components/Spinner.svelte';
 
   let metrics: any = $state(null);
-  let status: any = $state(null);
   let recentRequests: any[] = $state([]);
   let loading = $state(true);
 
-  // Fetch metrics, bot status, and recent requests in parallel.
+  // Fetch metrics and recent requests in parallel.
   async function refresh() {
     try {
-      const [m, s, r] = await Promise.all([
+      const [m, r] = await Promise.all([
         get('/api/metrics'),
-        get('/api/status'),
         get('/api/requests?limit=10'),
       ]);
       metrics = m;
-      status = s;
       recentRequests = r.requests;
 
     } catch (e) {
@@ -62,12 +59,6 @@
       <div class="card">
         <div class="card-label">Queue Depth</div>
         <div class="card-value">{metrics?.queue_depth ?? 0}</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Bot Status</div>
-        <div class="card-value">
-          <StatusBadge status={status?.connected ? 'connected' : 'disconnected'} label={status?.connected ? 'Online' : 'Offline'} />
-        </div>
       </div>
     </div>
 
