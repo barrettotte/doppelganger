@@ -61,7 +61,7 @@ class DoppelgangerBot(commands.Bot):
         """Log connection info and set bot status."""
         logger.info("Bot logged in as %s (ID: %s)", self.user, getattr(self.user, "id", None))
         logger.info("Connected to %d guild(s)", len(self.guilds))
-        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="/say"))
+        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="/help"))
 
     async def start_bot(self) -> None:
         """Start the bot. Intended to be run via asyncio.create_task()."""

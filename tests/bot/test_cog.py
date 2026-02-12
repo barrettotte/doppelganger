@@ -355,3 +355,42 @@ class TestVoicesCommand:
         embed = call_kwargs.kwargs.get("embed") or call_kwargs.args[0]
         assert "gandalf" in embed.description
         assert "gollum" in embed.description
+
+
+class TestHelpCommand:
+    """Tests for the /help slash command."""
+
+    async def test_help_returns_embed(self, cog: TTSCog, bot: MagicMock, interaction: MagicMock) -> None:
+        """/help should return an embed with commands and limits."""
+        bot.voice_registry.list_voices.return_value = [
+            VoiceEntry(name="gandalf", reference_audio_path=MagicMock()),
+        ]
+        bot.settings.max_text_length = 255
+        bot.settings.requests_per_minute = 3
+        bot.settings.cooldown_seconds = 5
+        bot.settings.max_queue_depth = 20
+        bot.settings.required_role_id = ""
+
+        await cog.help_command.callback(cog, interaction)
+
+        interaction.followup.send.assert_awaited_once()
+        call_kwargs = interaction.followup.send.call_args
+        embed = call_kwargs.kwargs.get("embed") or call_kwargs.args[0]
+        assert "Doppelganger" in embed.title
+        assert any("/say" in f.value for f in embed.fields)
+
+    async def test_help_shows_required_role(self, cog: TTSCog, bot: MagicMock, interaction: MagicMock) -> None:
+        """/help should show required role when configured."""
+        bot.voice_registry.list_voices.return_value = []
+        bot.settings.max_text_length = 255
+        bot.settings.requests_per_minute = 3
+        bot.settings.cooldown_seconds = 5
+        bot.settings.max_queue_depth = 20
+        bot.settings.required_role_id = "999"
+
+        await cog.help_command.callback(cog, interaction)
+
+        call_kwargs = interaction.followup.send.call_args
+        embed = call_kwargs.kwargs.get("embed") or call_kwargs.args[0]
+        field_values = " ".join(f.value for f in embed.fields)
+        assert "999" in field_values

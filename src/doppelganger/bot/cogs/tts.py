@@ -233,8 +233,45 @@ class TTSCog(commands.Cog):
             return
 
         embed = discord.Embed(title="Available Voices", color=discord.Color.blue())
-        names = "\n".join(f"- {v.name}" for v in voice_list)
+        names = "\n".join(f"- {v.name} ({v.engine.value})" for v in voice_list)
         embed.description = names
+        await interaction.followup.send(embed=embed)
+
+    @app_commands.command(name="help", description="Show available commands and usage info")
+    async def help_command(self, interaction: discord.Interaction) -> None:
+        """Show a summary of available commands and bot configuration."""
+        await interaction.response.defer(ephemeral=True)
+
+        settings = self.bot.settings
+        voice_count = len(self.bot.voice_registry.list_voices())
+        queue_state = self.bot.tts_queue.get_state()
+
+        embed = discord.Embed(title="Doppelganger TTS", color=discord.Color.blue())
+        embed.description = "Voice cloning bot - generate character speech in voice channels."
+
+        embed.add_field(
+            name="Commands",
+            value=(
+                "**/say** `<character> <text> [channel]` - Generate TTS and play in a voice channel\n"
+                "**/voices** - List available character voices\n"
+                "**/help** - Show this message"
+            ),
+            inline=False,
+        )
+
+        limits = (
+            f"Max text length: {settings.max_text_length} chars\n"
+            f"Rate limit: {settings.requests_per_minute}/min\n"
+            f"Cooldown: {settings.cooldown_seconds}s\n"
+            f"Queue depth: {queue_state.depth}/{settings.max_queue_depth}"
+        )
+        embed.add_field(name="Limits", value=limits, inline=True)
+
+        info = f"Voices loaded: {voice_count}"
+        if settings.required_role_id:
+            info += f"\nRequired role: <@&{settings.required_role_id}>"
+        embed.add_field(name="Info", value=info, inline=True)
+
         await interaction.followup.send(embed=embed)
 
 
