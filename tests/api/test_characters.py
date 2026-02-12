@@ -1,7 +1,5 @@
 """Tests for the characters API endpoints."""
 
-import io
-import wave
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
@@ -11,20 +9,6 @@ from httpx import AsyncClient
 from tests.conftest import mock_db_begin_single, mock_db_connect_list
 
 _NOW = datetime(2026, 1, 1)
-
-
-def _make_wav_bytes(duration_seconds: float = 10.0, sample_rate: int = 22050) -> bytes:
-    """Create valid WAV bytes for upload."""
-    buf = io.BytesIO()
-    n_frames = int(sample_rate * duration_seconds)
-
-    with wave.open(buf, "wb") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(sample_rate)
-        wf.writeframes(b"\x00" * (n_frames * 2))
-
-    return buf.getvalue()
 
 
 @pytest.mark.asyncio

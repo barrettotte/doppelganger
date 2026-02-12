@@ -1,5 +1,7 @@
 """Shared test fixtures with mocked database and TTS services."""
 
+import io
+import wave
 from collections.abc import AsyncIterator
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
@@ -16,6 +18,20 @@ from doppelganger.app import create_app
 from doppelganger.config import Settings
 from doppelganger.tts.cache import AudioCache
 from doppelganger.tts.voice_registry import VoiceRegistry
+
+
+def make_wav_bytes(duration_seconds: float = 10.0, sample_rate: int = 22050) -> bytes:
+    """Create valid WAV bytes for upload testing."""
+    buf = io.BytesIO()
+    n_frames = int(sample_rate * duration_seconds)
+
+    with wave.open(buf, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(sample_rate)
+        wf.writeframes(b"\x00" * (n_frames * 2))
+
+    return buf.getvalue()
 
 
 def mock_db_connect_list(rows: list[dict[str, object]]) -> MagicMock:

@@ -1,4 +1,4 @@
-# Stage 1: Build frontend
+# Build frontend
 FROM node:22-slim AS frontend
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -10,7 +10,7 @@ RUN pnpm install --frozen-lockfile
 COPY frontend/ ./
 RUN pnpm build
 
-# Stage 2: Python application
+# Python application
 FROM python:3.12-slim
 
 RUN apt-get update && \

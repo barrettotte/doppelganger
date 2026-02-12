@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from doppelganger.db.request_status import RequestStatus
 from doppelganger.db.types import TTSRequestRow
 
 
@@ -17,7 +18,9 @@ async def create_tts_request(conn: AsyncConnection, user_id: int, character: str
     return TTSRequestRow(**result.mappings().one())
 
 
-async def update_tts_request_status(conn: AsyncConnection, request_id: int, status: str) -> TTSRequestRow | None:
+async def update_tts_request_status(
+    conn: AsyncConnection, request_id: int, status: RequestStatus
+) -> TTSRequestRow | None:
     """Update the status of a TTS request."""
     sql = text("UPDATE tts_requests SET status = :status WHERE id = :id RETURNING *")
     params: dict[str, Any] = {"id": request_id, "status": status}
@@ -53,7 +56,7 @@ async def mark_tts_request_completed(conn: AsyncConnection, request_id: int, dur
 
 
 async def list_tts_requests(
-    conn: AsyncConnection, *, status: str | None = None, limit: int = 50, offset: int = 0
+    conn: AsyncConnection, *, status: RequestStatus | None = None, limit: int = 50, offset: int = 0
 ) -> list[TTSRequestRow]:
     """Fetch TTS requests, optionally filtered by status, with pagination."""
     if status is not None:
@@ -80,7 +83,7 @@ async def get_tts_request(conn: AsyncConnection, request_id: int) -> TTSRequestR
 
 
 async def list_tts_requests_by_user(
-    conn: AsyncConnection, user_id: int, *, status: str | None = None
+    conn: AsyncConnection, user_id: int, *, status: RequestStatus | None = None
 ) -> list[TTSRequestRow]:
     """Fetch TTS requests for a specific user, optionally filtered by status."""
     if status is not None:
@@ -94,7 +97,7 @@ async def list_tts_requests_by_user(
     return [TTSRequestRow(**row) for row in result.mappings().all()]
 
 
-async def count_tts_requests(conn: AsyncConnection, *, status: str | None = None) -> int:
+async def count_tts_requests(conn: AsyncConnection, *, status: RequestStatus | None = None) -> int:
     """Count total TTS requests, optionally filtered by status."""
     if status is not None:
         sql = text("SELECT COUNT(*) AS cnt FROM tts_requests WHERE status = :status")

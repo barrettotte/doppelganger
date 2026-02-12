@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 
 from doppelganger.config import OrpheusSettings
-from doppelganger.tts.engine import EngineType, TTSEngine, TTSOverrides, TTSResult
+from doppelganger.tts.engine import EngineType, TTSEngine, TTSOverrides, TTSResult, resolve_override
 from doppelganger.tts.exceptions import (
     TTSEngineUnavailableError,
     TTSGenerationError,
@@ -148,20 +148,10 @@ class OrpheusEngine(TTSEngine):
 
         lora_name = self._resolve_lora_name(voice_path)
         prompt = self._build_prompt(text)
-        temperature = (
-            overrides.temperature if overrides and overrides.temperature is not None else self._settings.temperature
-        )
-        top_p = overrides.top_p if overrides and overrides.top_p is not None else self._settings.top_p
-        repetition_penalty = (
-            overrides.repetition_penalty
-            if overrides and overrides.repetition_penalty is not None
-            else self._settings.repetition_penalty
-        )
-        frequency_penalty = (
-            overrides.frequency_penalty
-            if overrides and overrides.frequency_penalty is not None
-            else self._settings.frequency_penalty
-        )
+        temperature = resolve_override(overrides, "temperature", self._settings.temperature)
+        top_p = resolve_override(overrides, "top_p", self._settings.top_p)
+        repetition_penalty = resolve_override(overrides, "repetition_penalty", self._settings.repetition_penalty)
+        frequency_penalty = resolve_override(overrides, "frequency_penalty", self._settings.frequency_penalty)
 
         # Estimate prompt tokens (~3 chars per token) and cap to stay within context window.
         prompt_token_estimate = len(prompt) // 3 + 5

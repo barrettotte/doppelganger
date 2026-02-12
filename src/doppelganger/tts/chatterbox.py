@@ -10,7 +10,7 @@ import torch
 from chatterbox.tts import ChatterboxTTS
 
 from doppelganger.config import ChatterboxSettings
-from doppelganger.tts.engine import EngineType, TTSChunk, TTSEngine, TTSOverrides, TTSResult
+from doppelganger.tts.engine import EngineType, TTSChunk, TTSEngine, TTSOverrides, TTSResult, resolve_override
 from doppelganger.tts.exceptions import (
     TTSError,
     TTSGenerationError,
@@ -85,15 +85,9 @@ class ChatterboxEngine(TTSEngine):
     def generate(self, voice_path: str, text: str, overrides: TTSOverrides | None = None) -> TTSResult:
         """Generate speech using Chatterbox with the given reference WAV path."""
         model = self._require_model()
-        exaggeration = (
-            overrides.exaggeration if overrides and overrides.exaggeration is not None else self._settings.exaggeration
-        )
-        cfg_weight = (
-            overrides.cfg_weight if overrides and overrides.cfg_weight is not None else self._settings.cfg_weight
-        )
-        temperature = (
-            overrides.temperature if overrides and overrides.temperature is not None else self._settings.temperature
-        )
+        exaggeration = resolve_override(overrides, "exaggeration", self._settings.exaggeration)
+        cfg_weight = resolve_override(overrides, "cfg_weight", self._settings.cfg_weight)
+        temperature = resolve_override(overrides, "temperature", self._settings.temperature)
 
         try:
             wav = model.generate(
@@ -126,15 +120,9 @@ class ChatterboxEngine(TTSEngine):
     def generate_stream(self, voice_path: str, text: str, overrides: TTSOverrides | None = None) -> Iterator[TTSChunk]:
         """Stream TTS audio in chunks using Chatterbox's streaming API."""
         model = self._require_model()
-        exaggeration = (
-            overrides.exaggeration if overrides and overrides.exaggeration is not None else self._settings.exaggeration
-        )
-        cfg_weight = (
-            overrides.cfg_weight if overrides and overrides.cfg_weight is not None else self._settings.cfg_weight
-        )
-        temperature = (
-            overrides.temperature if overrides and overrides.temperature is not None else self._settings.temperature
-        )
+        exaggeration = resolve_override(overrides, "exaggeration", self._settings.exaggeration)
+        cfg_weight = resolve_override(overrides, "cfg_weight", self._settings.cfg_weight)
+        temperature = resolve_override(overrides, "temperature", self._settings.temperature)
 
         try:
             sample_rate: int = model.sr

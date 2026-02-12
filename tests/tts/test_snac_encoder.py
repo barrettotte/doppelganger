@@ -5,12 +5,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from doppelganger.tts.exceptions import TTSModelNotLoadedError
+from doppelganger.tts.snac_constants import AUDIO_VOCAB_OFFSET, CODEBOOK_OFFSETS
 from doppelganger.tts.snac_decoder import SNACDecoder
-from doppelganger.tts.snac_encoder import (
-    _AUDIO_VOCAB_OFFSET,
-    _CODEBOOK_OFFSETS,
-    SNACEncoder,
-)
+from doppelganger.tts.snac_encoder import SNACEncoder
 
 
 @pytest.fixture
@@ -105,13 +102,13 @@ def test_interleave_codes_single_frame() -> None:
     # Frame 0: codes[0][0][0]=10,  codes[1][0][0]=110, codes[2][0][0]=210,
     #          codes[2][0][1]=211, codes[1][0][1]=111, codes[2][0][2]=212, codes[2][0][3]=213
     expected = [
-        10 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[0],
-        110 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[1],
-        210 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[2],
-        211 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[3],
-        111 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[4],
-        212 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[5],
-        213 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[6],
+        10 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[0],
+        110 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[1],
+        210 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[2],
+        211 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[3],
+        111 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[4],
+        212 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[5],
+        213 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[6],
     ]
     assert tokens == expected
 
@@ -127,24 +124,24 @@ def test_interleave_codes_multiple_frames() -> None:
 
     # Frame 0 (i=0): coarse[0]=0, mid[0]=100, fine[0]=200, fine[1]=201, mid[1]=101, fine[2]=202, fine[3]=203
     frame_0 = [
-        0 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[0],
-        100 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[1],
-        200 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[2],
-        201 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[3],
-        101 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[4],
-        202 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[5],
-        203 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[6],
+        0 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[0],
+        100 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[1],
+        200 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[2],
+        201 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[3],
+        101 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[4],
+        202 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[5],
+        203 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[6],
     ]
 
     # Frame 1 (i=1): coarse[1]=1, mid[2]=102, fine[4]=204, fine[5]=205, mid[3]=103, fine[6]=206, fine[7]=207
     frame_1 = [
-        1 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[0],
-        102 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[1],
-        204 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[2],
-        205 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[3],
-        103 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[4],
-        206 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[5],
-        207 + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[6],
+        1 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[0],
+        102 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[1],
+        204 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[2],
+        205 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[3],
+        103 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[4],
+        206 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[5],
+        207 + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[6],
     ]
     assert tokens == frame_0 + frame_1
 
@@ -209,7 +206,7 @@ def test_round_trip_with_decoder() -> None:
     """Encoding then decoding recovers the original code values.
 
     Creates known 3-level codes, runs through encoder's _interleave_codes,
-    strips _AUDIO_VOCAB_OFFSET, then runs through decoder's _redistribute_codes
+    strips AUDIO_VOCAB_OFFSET, then runs through decoder's _redistribute_codes
     to verify the codes match the original values.
     """
     encoder = SNACEncoder()

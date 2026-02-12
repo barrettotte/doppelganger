@@ -16,7 +16,7 @@
 </script>
 
 {#if open}
-  <div class="overlay" role="button" tabindex="0" onclick={oncancel} onkeydown={handleOverlayKeydown}>
+  <div class="overlay" role="presentation" onclick={oncancel} onkeydown={handleOverlayKeydown}>
     <div class="modal" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" tabindex="-1">
       <h3>{title}</h3>
       <div class="body">

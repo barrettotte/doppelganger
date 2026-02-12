@@ -8,16 +8,9 @@ import torch
 import torchaudio
 
 from doppelganger.tts.exceptions import TTSModelNotLoadedError
+from doppelganger.tts.snac_constants import AUDIO_VOCAB_OFFSET, CODEBOOK_OFFSETS
 
 logger = logging.getLogger(__name__)
-
-# Orpheus interleaves 7 codebook layers and offsets each by a vocab constant.
-# These offsets are added to raw SNAC code indices to produce token IDs.
-_CODEBOOK_OFFSETS = [0, 4096, 8192, 12288, 16384, 20480, 24576]
-_NUM_CODEBOOKS = 7
-
-# Base shift into the Orpheus tokenizer vocabulary for audio tokens.
-_AUDIO_VOCAB_OFFSET = 128266
 
 
 class SNACEncoder:
@@ -78,13 +71,13 @@ class SNACEncoder:
 
         tokens: list[int] = []
         for i in range(n_frames):
-            tokens.append(int(codes[0][0][i]) + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[0])
-            tokens.append(int(codes[1][0][2 * i]) + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[1])
-            tokens.append(int(codes[2][0][4 * i]) + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[2])
-            tokens.append(int(codes[2][0][4 * i + 1]) + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[3])
-            tokens.append(int(codes[1][0][2 * i + 1]) + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[4])
-            tokens.append(int(codes[2][0][4 * i + 2]) + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[5])
-            tokens.append(int(codes[2][0][4 * i + 3]) + _AUDIO_VOCAB_OFFSET + _CODEBOOK_OFFSETS[6])
+            tokens.append(int(codes[0][0][i]) + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[0])
+            tokens.append(int(codes[1][0][2 * i]) + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[1])
+            tokens.append(int(codes[2][0][4 * i]) + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[2])
+            tokens.append(int(codes[2][0][4 * i + 1]) + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[3])
+            tokens.append(int(codes[1][0][2 * i + 1]) + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[4])
+            tokens.append(int(codes[2][0][4 * i + 2]) + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[5])
+            tokens.append(int(codes[2][0][4 * i + 3]) + AUDIO_VOCAB_OFFSET + CODEBOOK_OFFSETS[6])
 
         return tokens
 

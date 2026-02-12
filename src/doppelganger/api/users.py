@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from doppelganger.db.queries.tts_requests import list_tts_requests_by_user
 from doppelganger.db.queries.users import get_user, list_users, set_user_blacklisted
+from doppelganger.db.request_status import RequestStatus
 from doppelganger.models.tts import TTSRequestListResponse, TTSRequestResponse
 from doppelganger.models.users import (
     BlacklistRequest,
@@ -48,13 +49,15 @@ async def get_user_requests(
     status: str | None = Query(default=None, description="Filter by request status"),
 ) -> TTSRequestListResponse:
     """List TTS requests for a specific user."""
+    filter_status = RequestStatus(status) if status is not None else None
+
     async with request.app.state.db_engine.connect() as conn:
         user = await get_user(conn, user_id)
 
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-        rows = await list_tts_requests_by_user(conn, user_id, status=status)
+        rows = await list_tts_requests_by_user(conn, user_id, status=filter_status)
 
     requests_list = [TTSRequestResponse(**asdict(row)) for row in rows]
     return TTSRequestListResponse(requests=requests_list, count=len(requests_list), total=len(requests_list))

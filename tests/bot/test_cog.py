@@ -12,6 +12,23 @@ from doppelganger.tts.voice_registry import VoiceEntry
 _NOW = datetime(2026, 1, 1)
 
 
+def _make_interaction(discord_user_id: int = 12345, role_id: int = 111) -> MagicMock:
+    """Create a mock Discord interaction with standard test defaults."""
+    inter = MagicMock()
+    inter.response.defer = AsyncMock()
+    inter.followup.send = AsyncMock()
+    inter.user.id = discord_user_id
+    inter.user.voice = MagicMock()
+    inter.user.voice.channel = MagicMock()
+    inter.user.voice.channel.guild.id = 42
+
+    role = MagicMock()
+    role.id = role_id
+    inter.user.roles = [role]
+
+    return inter
+
+
 def _make_execute_result(row_dict: dict[str, object] | None) -> MagicMock:
     """Create a mock execute result with mappings().first() and .one() returning the given dict."""
     result = MagicMock()
@@ -134,19 +151,7 @@ def cog(bot: MagicMock) -> TTSCog:
 @pytest.fixture
 def interaction() -> MagicMock:
     """Create a mock Discord interaction."""
-    inter = MagicMock()
-    inter.response.defer = AsyncMock()
-    inter.followup.send = AsyncMock()
-    inter.user.id = 12345
-    inter.user.voice = MagicMock()
-    inter.user.voice.channel = MagicMock()
-    inter.user.voice.channel.guild.id = 42
-
-    role = MagicMock()
-    role.id = 111
-    inter.user.roles = [role]
-
-    return inter
+    return _make_interaction()
 
 
 class TestSayCommand:
@@ -183,13 +188,7 @@ class TestSayCommand:
         await bot.tts_queue.dequeue()
 
         # Submit a second request while the first is processing
-        interaction2 = MagicMock()
-        interaction2.response.defer = AsyncMock()
-        interaction2.followup.send = AsyncMock()
-        interaction2.user.id = 12345
-        role = MagicMock()
-        role.id = 111
-        interaction2.user.roles = [role]
+        interaction2 = _make_interaction()
 
         await cog.say.callback(cog, interaction2, "gandalf", "Second request", target_channel)
 
@@ -264,13 +263,7 @@ class TestSayCommand:
         await cog.say.callback(cog, interaction, "gandalf", "First", target_channel)
 
         # Second request should get queue full message
-        interaction2 = MagicMock()
-        interaction2.response.defer = AsyncMock()
-        interaction2.followup.send = AsyncMock()
-        interaction2.user.id = 12345
-        role = MagicMock()
-        role.id = 111
-        interaction2.user.roles = [role]
+        interaction2 = _make_interaction()
 
         await cog.say.callback(cog, interaction2, "gandalf", "Second", target_channel)
 

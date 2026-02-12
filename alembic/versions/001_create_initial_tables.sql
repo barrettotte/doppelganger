@@ -25,7 +25,7 @@ CREATE TABLE characters (
 
 CREATE TABLE tts_requests (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users (id),
+    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     character VARCHAR(100) NOT NULL,
     text VARCHAR(3000) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
@@ -39,7 +39,7 @@ CREATE INDEX idx_tts_requests_status ON tts_requests (status);
 
 CREATE TABLE audit_log (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users (id),
+    user_id INTEGER REFERENCES users (id) ON DELETE SET NULL,
     action VARCHAR(100) NOT NULL,
     details JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

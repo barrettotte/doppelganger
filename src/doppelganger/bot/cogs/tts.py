@@ -1,9 +1,11 @@
 """TTS slash commands for the Discord bot."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import time
-from typing import Any
+from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
@@ -21,6 +23,10 @@ from doppelganger.db.queries.tts_requests import (
     update_tts_request_status,
 )
 from doppelganger.db.queries.users import create_user, get_user_by_discord_id, update_username
+from doppelganger.db.request_status import RequestStatus
+
+if TYPE_CHECKING:
+    from doppelganger.bot.client import DoppelgangerBot
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +34,7 @@ logger = logging.getLogger(__name__)
 class TTSCog(commands.Cog):
     """Cog providing /say and /voices slash commands with queued TTS processing."""
 
-    def __init__(self, bot: Any) -> None:
+    def __init__(self, bot: DoppelgangerBot) -> None:
         self.bot = bot
         self.max_text_length: int = bot.settings.max_text_length
         self.voice_manager = VoiceManager(
@@ -62,7 +68,7 @@ class TTSCog(commands.Cog):
                 # we still want to attempt the other so neither is left hanging.
                 try:
                     async with self.bot.db_engine.begin() as conn:
-                        await update_tts_request_status(conn, item.request_id, "failed")
+                        await update_tts_request_status(conn, item.request_id, RequestStatus.FAILED)
                 except Exception:
                     logger.exception("Failed to update request status for %d", item.request_id)
 
@@ -203,7 +209,7 @@ class TTSCog(commands.Cog):
             await interaction.followup.send("The request queue is full. Please try again shortly.")
 
             async with self.bot.db_engine.begin() as conn:
-                await update_tts_request_status(conn, request_id, "cancelled")
+                await update_tts_request_status(conn, request_id, RequestStatus.CANCELLED)
             return
 
         if position == 1 and self.bot.tts_queue.processing is None:
@@ -275,6 +281,6 @@ class TTSCog(commands.Cog):
         await interaction.followup.send(embed=embed)
 
 
-async def setup(bot: Any) -> None:
+async def setup(bot: DoppelgangerBot) -> None:
     """Add the TTS cog to the bot."""
     await bot.add_cog(TTSCog(bot))

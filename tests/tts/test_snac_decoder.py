@@ -79,7 +79,7 @@ def test_redistribute_codes_interleaves_per_frame() -> None:
     """_redistribute_codes splits tokens into 3 SNAC levels with per-frame interleaving."""
     decoder = SNACDecoder()
     # 14 tokens = 2 frames of 7
-    # Use values that are offset by _AUDIO_VOCAB_OFFSET (128266) + codebook offsets
+    # Use values that are offset by AUDIO_VOCAB_OFFSET (128266) + codebook offsets
     # so the de-offset result is predictable.
     offset = 128266
     tokens = [

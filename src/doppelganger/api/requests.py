@@ -10,6 +10,7 @@ from doppelganger.db.queries.tts_requests import (
     get_tts_request,
     list_tts_requests,
 )
+from doppelganger.db.request_status import RequestStatus
 from doppelganger.models.tts import TTSRequestListResponse, TTSRequestResponse
 
 logger = logging.getLogger(__name__)
@@ -25,10 +26,11 @@ async def list_all_requests(
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
 ) -> TTSRequestListResponse:
     """List TTS requests with optional status filter and pagination."""
+    filter_status = RequestStatus(status) if status is not None else None
 
     async with request.app.state.db_engine.connect() as conn:
-        total = await count_tts_requests(conn, status=status)
-        rows = await list_tts_requests(conn, status=status, limit=limit, offset=offset)
+        total = await count_tts_requests(conn, status=filter_status)
+        rows = await list_tts_requests(conn, status=filter_status, limit=limit, offset=offset)
 
     requests_list = [TTSRequestResponse(**asdict(row)) for row in rows]
     return TTSRequestListResponse(requests=requests_list, count=len(requests_list), total=total)

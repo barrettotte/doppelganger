@@ -7,6 +7,11 @@ from typing import Any
 
 import torch
 
+try:
+    import pynvml  # type: ignore[import-untyped]
+except ImportError:
+    pynvml = None  # type: ignore[assignment]
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,6 +22,12 @@ def get_gpu_stats() -> list[dict[str, Any]]:
 
     results: list[dict[str, Any]] = []
     device_count = torch.cuda.device_count()
+
+    if pynvml is not None:
+        try:
+            pynvml.nvmlInit()
+        except Exception:
+            logger.debug("pynvml.nvmlInit() failed, skipping utilization/temp")
 
     for i in range(device_count):
         name = torch.cuda.get_device_name(i)
@@ -36,17 +47,17 @@ def get_gpu_stats() -> list[dict[str, Any]]:
             "temperature_c": None,
         }
 
-        try:
-            import pynvml  # type: ignore[import-untyped]
+        if pynvml is not None:
+            try:
+                handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+                util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                info["utilization_percent"] = float(util.gpu)
 
-            pynvml.nvmlInit()
-            handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-            util = pynvml.nvmlDeviceGetUtilizationRates(handle)
-            info["utilization_percent"] = float(util.gpu)
-            temp = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
-            info["temperature_c"] = temp
-        except Exception:
-            logger.debug("pynvml unavailable for GPU %d, skipping utilization/temp", i)
+                temp = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
+                info["temperature_c"] = temp
+
+            except Exception:
+                logger.debug("pynvml unavailable for GPU %d, skipping utilization/temp", i)
 
         results.append(info)
 

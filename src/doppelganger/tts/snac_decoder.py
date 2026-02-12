@@ -9,16 +9,9 @@ import snac
 import torch
 
 from doppelganger.tts.exceptions import TTSGenerationError, TTSModelNotLoadedError
+from doppelganger.tts.snac_constants import AUDIO_VOCAB_OFFSET, CODEBOOK_OFFSETS, NUM_CODEBOOKS
 
 logger = logging.getLogger(__name__)
-
-# Orpheus interleaves 7 codebook layers and offsets each by a vocab constant.
-# These offsets must be subtracted to recover the raw SNAC code indices.
-_CODEBOOK_OFFSETS = [0, 4096, 8192, 12288, 16384, 20480, 24576]
-_NUM_CODEBOOKS = 7
-
-# Base shift into the Orpheus tokenizer vocabulary for audio tokens.
-_AUDIO_VOCAB_OFFSET = 128266
 
 
 class SNACDecoder:
@@ -70,16 +63,16 @@ class SNACDecoder:
         layer_1: list[int] = []
         layer_2: list[int] = []
 
-        n_frames = len(token_ids) // _NUM_CODEBOOKS
+        n_frames = len(token_ids) // NUM_CODEBOOKS
         for i in range(n_frames):
-            base = _NUM_CODEBOOKS * i
-            layer_0.append(token_ids[base] - _AUDIO_VOCAB_OFFSET)
-            layer_1.append(token_ids[base + 1] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[1])
-            layer_2.append(token_ids[base + 2] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[2])
-            layer_2.append(token_ids[base + 3] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[3])
-            layer_1.append(token_ids[base + 4] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[4])
-            layer_2.append(token_ids[base + 5] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[5])
-            layer_2.append(token_ids[base + 6] - _AUDIO_VOCAB_OFFSET - _CODEBOOK_OFFSETS[6])
+            base = NUM_CODEBOOKS * i
+            layer_0.append(token_ids[base] - AUDIO_VOCAB_OFFSET)
+            layer_1.append(token_ids[base + 1] - AUDIO_VOCAB_OFFSET - CODEBOOK_OFFSETS[1])
+            layer_2.append(token_ids[base + 2] - AUDIO_VOCAB_OFFSET - CODEBOOK_OFFSETS[2])
+            layer_2.append(token_ids[base + 3] - AUDIO_VOCAB_OFFSET - CODEBOOK_OFFSETS[3])
+            layer_1.append(token_ids[base + 4] - AUDIO_VOCAB_OFFSET - CODEBOOK_OFFSETS[4])
+            layer_2.append(token_ids[base + 5] - AUDIO_VOCAB_OFFSET - CODEBOOK_OFFSETS[5])
+            layer_2.append(token_ids[base + 6] - AUDIO_VOCAB_OFFSET - CODEBOOK_OFFSETS[6])
 
         return layer_0, layer_1, layer_2
 

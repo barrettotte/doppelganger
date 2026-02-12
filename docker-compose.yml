@@ -15,6 +15,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   vllm:
     image: vllm/vllm-openai:v0.6.6.post1
@@ -46,6 +47,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 120s
+    restart: unless-stopped
     profiles:
       - orpheus
 
@@ -64,6 +66,7 @@ services:
         condition: service_healthy
     devices:
       - nvidia.com/gpu=all
+    restart: unless-stopped
     profiles:
       - app
 

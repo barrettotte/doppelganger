@@ -3,7 +3,7 @@
 	test test-unit test-integration \
 	fmt lint type-check check \
 	docker-up docker-down docker-db psql \
-	vllm vllm-down vllm-logs \
+	vllm vllm-down \
 	frontend-install frontend-dev frontend \
 	prepare-audio train-lora transcribe
 

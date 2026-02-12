@@ -6,6 +6,7 @@ from dataclasses import asdict
 from fastapi import APIRouter, Request
 
 from doppelganger.db.queries.tts_requests import update_tts_request_status
+from doppelganger.db.request_status import RequestStatus
 from doppelganger.models.queue import QueueActionResponse, QueueStateResponse
 
 logger = logging.getLogger(__name__)
@@ -39,10 +40,10 @@ async def cancel_request(request: Request, request_id: int) -> QueueActionRespon
 
     try:
         async with bot.db_engine.begin() as conn:
-            await update_tts_request_status(conn, request_id, "cancelled")
+            await update_tts_request_status(conn, request_id, RequestStatus.CANCELLED)
 
     except Exception:
-        logger.warning("Failed to update DB status for cancelled request %d", request_id)
+        logger.exception("Failed to update DB status for cancelled request %d", request_id)
 
     return QueueActionResponse(success=True, message=f"Request {request_id} cancelled")
 

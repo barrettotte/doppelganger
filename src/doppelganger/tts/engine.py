@@ -43,6 +43,15 @@ class TTSOverrides:
     frequency_penalty: float | None = None
 
 
+def resolve_override(overrides: TTSOverrides | None, field: str, default: float) -> float:
+    """Resolve a per-character override value, falling back to the global default."""
+    if overrides is None:
+        return default
+
+    val = getattr(overrides, field)
+    return val if val is not None else default
+
+
 class TTSEngine(ABC):
     """Base class for pluggable TTS backends."""
 

@@ -1,7 +1,5 @@
 """Integration tests for API endpoints against a real Postgres."""
 
-import io
-import wave
 from collections.abc import AsyncIterator
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -13,22 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from doppelganger.app import create_app
 from doppelganger.tts.cache import AudioCache
 from doppelganger.tts.voice_registry import VoiceRegistry
+from tests.conftest import make_wav_bytes
 
 pytestmark = pytest.mark.integration
-
-
-def _make_wav_bytes(duration_seconds: float = 10.0, sample_rate: int = 22050) -> bytes:
-    """Create valid WAV bytes for upload."""
-    buf = io.BytesIO()
-    n_frames = int(sample_rate * duration_seconds)
-
-    with wave.open(buf, "wb") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(sample_rate)
-        wf.writeframes(b"\x00" * (n_frames * 2))
-
-    return buf.getvalue()
 
 
 @pytest.fixture
@@ -68,7 +53,7 @@ async def test_health_database_connected(integration_client: AsyncClient) -> Non
 
 async def test_create_character(integration_client: AsyncClient) -> None:
     """POST /api/characters with valid WAV creates a character (201)."""
-    wav_data = _make_wav_bytes()
+    wav_data = make_wav_bytes()
     response = await integration_client.post(
         "/api/characters",
         params={"name": "test-char"},
@@ -83,7 +68,7 @@ async def test_create_character(integration_client: AsyncClient) -> None:
 
 async def test_create_duplicate_character(integration_client: AsyncClient) -> None:
     """POST /api/characters with duplicate name returns 409."""
-    wav_data = _make_wav_bytes()
+    wav_data = make_wav_bytes()
     first = await integration_client.post(
         "/api/characters",
         params={"name": "dupe-char"},
@@ -101,7 +86,7 @@ async def test_create_duplicate_character(integration_client: AsyncClient) -> No
 
 async def test_delete_character(integration_client: AsyncClient) -> None:
     """DELETE /api/characters/{id} removes the character (204)."""
-    wav_data = _make_wav_bytes()
+    wav_data = make_wav_bytes()
     create_resp = await integration_client.post(
         "/api/characters",
         params={"name": "delete-me"},
